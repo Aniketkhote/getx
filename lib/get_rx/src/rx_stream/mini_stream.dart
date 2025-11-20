@@ -1,83 +1,116 @@
 part of 'rx_stream.dart';
 
+/// A node in a doubly-linked list that holds data of type T.
 class Node<T> {
-  T? data;
+  final T? data;
   Node<T>? next;
   Node<T>? prev;
+  
   Node({this.data, this.next, this.prev});
+  
+  /// Creates a pair of connected nodes with the same data
+  static (Node<E>, Node<E>) createPair<E>(E data) => (
+        Node(data: data),
+        Node(data: data, prev: Node(data: data)),
+      );
 }
 
+/// A subscription to a [MiniStream] that can be used to cancel the subscription.
 class MiniSubscription<T> {
   const MiniSubscription(
-      this.data, this.onError, this.onDone, this.cancelOnError, this.listener);
+    this.data, 
+    this.onError, 
+    this.onDone, 
+    this.cancelOnError, 
+    this.listener,
+  );
+  
   final OnData<T> data;
   final Function? onError;
   final Callback? onDone;
   final bool cancelOnError;
+  final FastList<T> listener;
 
   Future<void> cancel() async => listener.removeListener(this);
-
-  final FastList<T> listener;
 }
 
+/// A lightweight stream implementation with value semantics and change notifications.
 class MiniStream<T> {
-  FastList<T> listenable = FastList<T>();
-
+  final FastList<T> _listenable = FastList<T>();
   late T _value;
+  bool _isClosed = false;
 
+  /// The current value of the stream.
   T get value => _value;
-
-  set value(T val) {
-    add(val);
-  }
-
-  void add(T event) {
-    _value = event;
-    listenable._notifyData(event);
-  }
-
-  void addError(Object error, [StackTrace? stackTrace]) {
-    listenable._notifyError(error, stackTrace);
-  }
-
-  int get length => listenable.length;
-
-  bool get hasListeners => listenable.isNotEmpty;
-
+  
+  /// Sets the current value and notifies listeners.
+  set value(T val) => add(val);
+  
+  /// The number of active listeners.
+  int get length => _listenable.length;
+  
+  /// Whether there are any active listeners.
+  bool get hasListeners => _listenable.isNotEmpty;
+  
+  /// Whether the stream has been closed.
   bool get isClosed => _isClosed;
 
-  MiniSubscription<T> listen(void Function(T event) onData,
-      {Function? onError,
-      void Function()? onDone,
-      bool cancelOnError = false}) {
-    final subs = MiniSubscription<T>(
+  /// Adds a value to the stream and notifies all listeners.
+  void add(T event) {
+    _value = event;
+    _listenable._notifyData(event);
+  }
+
+  /// Adds an error to the stream and notifies all error listeners.
+  void addError(Object error, [StackTrace? stackTrace]) {
+    _listenable._notifyError(error, stackTrace);
+  }
+
+  /// Subscribes to the stream.
+  MiniSubscription<T> listen(
+    void Function(T event) onData, {
+    Function? onError,
+    void Function()? onDone,
+    bool cancelOnError = false,
+  }) {
+    final subscription = MiniSubscription<T>(
       onData,
       onError,
       onDone,
       cancelOnError,
-      listenable,
+      _listenable,
     );
-    listenable.addListener(subs);
-    return subs;
+    _listenable.addListener(subscription);
+    return subscription;
   }
 
-  bool _isClosed = false;
-
+  /// Closes the stream and notifies all listeners.
   void close() {
     if (_isClosed) {
-      throw 'You can not close a closed Stream';
+      throw StateError('Cannot close an already closed stream');
     }
-    listenable._notifyDone();
-    listenable.clear();
+    _listenable._notifyDone();
+    _listenable.clear();
     _isClosed = true;
   }
 }
 
+/// A fast, memory-efficient linked list implementation for managing subscriptions.
 class FastList<T> {
   Node<MiniSubscription<T>>? _head;
   Node<MiniSubscription<T>>? _tail;
   int _length = 0;
 
+  /// Whether the list is empty.
+  bool get isEmpty => _length == 0;
+  
+  /// Whether the list is not empty.
+  bool get isNotEmpty => !isEmpty;
+  
+  /// The number of elements in the list.
+  int get length => _length;
+
+  /// Notifies all listeners with the given data.
   void _notifyData(T data) {
     var currentNode = _head;
     while (currentNode != null) {
@@ -86,6 +119,7 @@ class FastList<T> {
     }
   }
 
+  /// Notifies all listeners that the stream is done.
   void _notifyDone() {
     var currentNode = _head;
     while (currentNode != null) {
@@ -94,22 +128,29 @@ class FastList<T> {
     }
   }
 
+  /// Notifies all error listeners with the given error.
   void _notifyError(Object error, [StackTrace? stackTrace]) {
     var currentNode = _head;
     while (currentNode != null) {
-      currentNode.data?.onError?.call(error, stackTrace);
+      final onError = currentNode.data?.onError;
+      if (onError != null) {
+        if (onError is Function(dynamic, StackTrace?)) {
+          onError(error, stackTrace ?? StackTrace.current);
+        } else if (onError is Function(dynamic)) {
+          onError(error);
+        } else {
+          onError(error, stackTrace);
+        }
+      }
       currentNode = currentNode.next;
     }
   }
 
-  bool get isEmpty => _length == 0;
-
-  bool get isNotEmpty => _length > 0;
-
-  int get length => _length;
-
-  MiniSubscription<T>? elementAt(int position) {
-    if (isEmpty || position < 0 || position >= _length) return null;
+  /// Gets the element at the specified position, or null if out of bounds.
+  ({bool found, MiniSubscription<T>? value}) elementAt(int position) {
+    if (isEmpty || position < 0 || position >= _length) {
+      return (found: false, value: null);
+    }
 
     var node = _head;
     var current = 0;
@@ -118,12 +159,13 @@ class FastList<T> {
       node = node!.next;
       current++;
     }
-    return node!.data;
+    return (found: true, value: node!.data);
   }
 
+  /// Adds a listener to the list.
   void addListener(MiniSubscription<T> data) {
-    var newNode = Node(data: data);
-
+    final newNode = Node(data: data);
+    
     if (isEmpty) {
       _head = _tail = newNode;
     } else {
@@ -134,6 +176,7 @@ class FastList<T> {
     _length++;
   }
 
+  /// Whether the list contains the given element.
   bool contains(T element) {
     var currentNode = _head;
     while (currentNode != null) {
@@ -143,6 +186,7 @@ class FastList<T> {
     return false;
   }
 
+  /// Removes the first occurrence of the given element from the list.
   void removeListener(MiniSubscription<T> element) {
     var currentNode = _head;
     while (currentNode != null) {
@@ -154,18 +198,22 @@ class FastList<T> {
     }
   }
 
+  /// Removes all elements from the list.
   void clear() {
     _head = _tail = null;
     _length = 0;
   }
 
+  /// Removes the given node from the list.
   void _removeNode(Node<MiniSubscription<T>> node) {
+    // Update previous node's next pointer
     if (node.prev == null) {
       _head = node.next;
     } else {
       node.prev!.next = node.next;
     }
 
+    // Update next node's previous pointer
     if (node.next == null) {
       _tail = node.prev;
     } else {

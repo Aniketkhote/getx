@@ -6,26 +6,39 @@ import '../../get_core/get_core.dart';
 import '../../get_navigation/src/router_report.dart';
 import 'lifecycle.dart';
 
-class InstanceInfo {
-  final bool? isPermanent;
-  final bool? isSingleton;
-  bool get isCreate => !isSingleton!;
-  final bool isRegistered;
-  final bool isPrepared;
-  final bool? isInit;
-  const InstanceInfo({
-    required this.isPermanent,
-    required this.isSingleton,
-    required this.isRegistered,
-    required this.isPrepared,
-    required this.isInit,
-  });
+/// Record type for instance information
+typedef InstanceInfo = ({
+  bool? isPermanent,
+  bool? isSingleton,
+  bool isRegistered,
+  bool isPrepared,
+  bool? isInit,
+});
 
-  @override
-  String toString() {
-    return 'InstanceInfo(isPermanent: $isPermanent, isSingleton: $isSingleton, isRegistered: $isRegistered, isPrepared: $isPrepared, isInit: $isInit)';
-  }
+/// Extension for computed properties on InstanceInfo
+extension InstanceInfoX on InstanceInfo {
+  bool get isCreate => !(isSingleton ?? false);
 }
+
+/// Sealed class for instance state management
+sealed class InstanceState<T> {
+  const InstanceState();
+}
+
+/// Success state with instance
+class InstanceReady<T> extends InstanceState<T> {
+  final T instance;
+  final bool isPermanent;
+  const InstanceReady(this.instance, {required this.isPermanent});
+}
+
+/// Error state
+class InstanceError<T> extends InstanceState<T> {
+  final String message;
+  const InstanceError(this.message);
+}
+
+// InstanceInfo has been replaced with a record type and moved to the top of the file
 
 extension ResetInstance on GetInterface {
   /// Clears all registered instances (and/or tags).
@@ -158,16 +171,13 @@ extension Inst on GetInterface {
     bool fenix = false,
   }) {
     final key = _getKey(S, name);
-
-    _InstanceBuilderFactory<S>? dep;
-    if (_singl.containsKey(key)) {
-      final newDep = _singl[key];
-      if (newDep == null || !newDep.isDirty) {
-        return;
-      } else {
-        dep = newDep as _InstanceBuilderFactory<S>;
-      }
+    final existing = _singl[key];
+    
+    // If instance exists and is not dirty, return early
+    if (existing != null && !existing.isDirty) {
+      return;
     }
+    
     _singl[key] = _InstanceBuilderFactory<S>(
       isSingleton: isSingleton,
       builderFunc: builder,
@@ -175,7 +185,7 @@ extension Inst on GetInterface {
       isInit: false,
       fenix: fenix,
       tag: name,
-      lateRemove: dep,
+      lateRemove: existing as _InstanceBuilderFactory<S>?,
     );
   }
 
@@ -190,41 +200,44 @@ extension Inst on GetInterface {
   /// work properly.
   S? _initDependencies<S>({String? name}) {
     final key = _getKey(S, name);
-    final isInit = _singl[key]!.isInit;
-    S? i;
-    if (!isInit) {
-      final isSingleton = _singl[key]?.isSingleton ?? false;
-      if (isSingleton) {
-        _singl[key]!.isInit = true;
+    final builder = _singl[key];
+    if (builder == null) return null;
+    
+    S? instance;
+    if (!builder.isInit) {
+      if (builder.isSingleton == true) {
+        builder.isInit = true;
       }
-      i = _startController<S>(tag: name);
+      instance = _startController<S>(tag: name);
 
-      if (isSingleton) {
+      if (builder.isSingleton == true) {
         if (Get.smartManagement != SmartManagement.onlyBuilder) {
           RouterReportManager.instance
-              .reportDependencyLinkedToRoute(_getKey(S, name));
+              .reportDependencyLinkedToRoute(key);
         }
       }
     }
-    return i;
+    return instance;
   }
 
   InstanceInfo getInstanceInfo<S>({String? tag}) {
-    final build = _getDependency<S>(tag: tag);
-
-    return InstanceInfo(
-      isPermanent: build?.permanent,
-      isSingleton: build?.isSingleton,
-      isRegistered: isRegistered<S>(tag: tag),
-      isPrepared: !(build?.isInit ?? true),
-      isInit: build?.isInit,
+    final key = _getKey(S, tag);
+    final builder = _singl[key];
+    
+    return (
+      isPermanent: builder?.permanent,
+      isSingleton: builder?.isSingleton,
+      isRegistered: builder != null,
+      isPrepared: builder?.isInit ?? false,
+      isInit: builder?.isInit,
     );
   }
 
   _InstanceBuilderFactory? _getDependency<S>({String? tag, String? key}) {
     final newKey = key ?? _getKey(S, tag);
-
-    if (!_singl.containsKey(newKey)) {
+    final builder = _singl[newKey];
+    
+    if (builder == null) {
       Get.log('Instance "$newKey" is not registered.', isError: true);
       return null;
     } else {

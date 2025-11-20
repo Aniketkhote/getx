@@ -19,7 +19,15 @@ mixin Equality {
   }
 }
 
-const int _hashMask = 0x7fffffff;
+// Using a private extension to encapsulate hash-related functionality
+extension on int {
+  int get _mixHash {
+    var hash = this;
+    hash = (hash + (hash << 3)) & 0x7fffffff;
+    hash ^= (hash >> 11);
+    return (hash + (hash << 15)) & 0x7fffffff;
+  }
+}
 
 /// A generic equality relation on objects.
 abstract class IEquality<E> {
@@ -131,20 +139,14 @@ class ListEquality<E> implements IEquality<List<E>> {
   @override
   int hash(List<E>? list) {
     if (list == null) return null.hashCode;
-    // Jenkins's one-at-a-time hash function.
-    // This code is almost identical to the one in IterableEquality, except
-    // that it uses indexing instead of iterating to get the elements.
     var hash = 0;
     for (var i = 0; i < list.length; i++) {
-      var c = _elementEquality.hash(list[i]);
-      hash = (hash + c) & _hashMask;
-      hash = (hash + (hash << 10)) & _hashMask;
+      final c = _elementEquality.hash(list[i]);
+      hash = (hash + c) & 0x7fffffff;
+      hash = (hash + (hash << 10)) & 0x7fffffff;
       hash ^= (hash >> 6);
     }
-    hash = (hash + (hash << 3)) & _hashMask;
-    hash ^= (hash >> 11);
-    hash = (hash + (hash << 15)) & _hashMask;
-    return hash;
+    return hash._mixHash;
   }
 
   @override
@@ -168,20 +170,28 @@ class MapEquality<K, V> implements IEquality<Map<K, V>> {
   bool equals(Map<K, V>? map1, Map<K, V>? map2) {
     if (identical(map1, map2)) return true;
     if (map1 == null || map2 == null) return false;
-    var length = map1.length;
-    if (length != map2.length) return false;
-    Map<_MapEntry, int> equalElementCounts = HashMap();
-    for (var key in map1.keys) {
-      var entry = _MapEntry(this, key, map1[key]);
-      var count = equalElementCounts[entry] ?? 0;
-      equalElementCounts[entry] = count + 1;
+    if (map1.length != map2.length) return false;
+    
+    // Using records for map entries
+    final counts = HashMap<(Object?, Object?), int>(
+      equals: (a, b) => _mapEntriesEqual(a, b, _keyEquality, _valueEquality),
+      hashCode: (e) => _mapEntryHash(e, _keyEquality, _valueEquality),
+    );
+    
+    // Count entries in first map
+    for (final entry in map1.entries) {
+      final key = (entry.key, entry.value);
+      counts[key] = (counts[key] ?? 0) + 1;
     }
-    for (var key in map2.keys) {
-      var entry = _MapEntry(this, key, map2[key]);
-      var count = equalElementCounts[entry];
-      if (count == null || count == 0) return false;
-      equalElementCounts[entry] = count - 1;
+    
+    // Verify entries in second map
+    for (final entry in map2.entries) {
+      final key = (entry.key, entry.value);
+      final count = counts[key] ?? 0;
+      if (count == 0) return false;
+      counts[key] = count - 1;
     }
+    
     return true;
   }
 
@@ -189,38 +199,35 @@ class MapEquality<K, V> implements IEquality<Map<K, V>> {
   int hash(Map<K, V>? map) {
     if (map == null) return null.hashCode;
     var hash = 0;
-    for (var key in map.keys) {
-      var keyHash = _keyEquality.hash(key);
-      var valueHash = _valueEquality.hash(map[key] as V);
-      hash = (hash + 3 * keyHash + 7 * valueHash) & _hashMask;
+    for (final entry in map.entries) {
+      final keyHash = _keyEquality.hash(entry.key);
+      final valueHash = _valueEquality.hash(entry.value);
+      hash = (hash + 3 * keyHash + 7 * valueHash) & 0x7fffffff;
     }
-    hash = (hash + (hash << 3)) & _hashMask;
-    hash ^= (hash >> 11);
-    hash = (hash + (hash << 15)) & _hashMask;
-    return hash;
+    return hash._mixHash;
   }
 
   @override
   bool isValidKey(Object? o) => o is Map<K, V>;
 }
 
-class _MapEntry {
-  final MapEquality equality;
-  final Object? key;
-  final Object? value;
-  _MapEntry(this.equality, this.key, this.value);
+// Using a record type for map entry comparison
+bool _mapEntriesEqual(
+  (Object?, Object?) a,
+  (Object?, Object?) b,
+  IEquality keyEquality,
+  IEquality valueEquality,
+) {
+  return keyEquality.equals(a.$1, b.$1) && valueEquality.equals(a.$2, b.$2);
+}
 
-  @override
-  int get hashCode =>
-      (3 * equality._keyEquality.hash(key) +
-          7 * equality._valueEquality.hash(value)) &
-      _hashMask;
-
-  @override
-  bool operator ==(Object other) =>
-      other is _MapEntry &&
-      equality._keyEquality.equals(key, other.key) &&
-      equality._valueEquality.equals(value, other.value);
+int _mapEntryHash(
+  (Object?, Object?) entry,
+  IEquality keyEquality,
+  IEquality valueEquality,
+) {
+  return (3 * keyEquality.hash(entry.$1) + 7 * valueEquality.hash(entry.$2)) &
+      0x7fffffff;
 }
 
 /// Equality on iterables.
@@ -249,18 +256,14 @@ class IterableEquality<E> implements IEquality<Iterable<E>> {
   @override
   int hash(Iterable<E>? elements) {
     if (elements == null) return null.hashCode;
-    // Jenkins's one-at-a-time hash function.
     var hash = 0;
-    for (var element in elements) {
-      var c = _elementEquality.hash(element);
-      hash = (hash + c) & _hashMask;
-      hash = (hash + (hash << 10)) & _hashMask;
+    for (final element in elements) {
+      final c = _elementEquality.hash(element);
+      hash = (hash + c) & 0x7fffffff;
+      hash = (hash + (hash << 10)) & 0x7fffffff;
       hash ^= (hash >> 6);
     }
-    hash = (hash + (hash << 3)) & _hashMask;
-    hash ^= (hash >> 11);
-    hash = (hash + (hash << 15)) & _hashMask;
-    return hash;
+    return hash._mixHash;
   }
 
   @override
@@ -312,14 +315,10 @@ abstract class _UnorderedEquality<E, T extends Iterable<E>>
   int hash(T? elements) {
     if (elements == null) return null.hashCode;
     var hash = 0;
-    for (E element in elements) {
-      var c = _elementEquality.hash(element);
-      hash = (hash + c) & _hashMask;
+    for (final element in elements) {
+      hash = (hash + _elementEquality.hash(element)) & 0x7fffffff;
     }
-    hash = (hash + (hash << 3)) & _hashMask;
-    hash ^= (hash >> 11);
-    hash = (hash + (hash << 15)) & _hashMask;
-    return hash;
+    return hash._mixHash;
   }
 }
 

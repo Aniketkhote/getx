@@ -1,6 +1,9 @@
 part of '../rx_types.dart';
 
-/// Create a list similar to `List<T>`
+/// A reactive list that notifies listeners when modified.
+///
+/// This class extends [ListMixin] and [RxObjectMixin] to provide
+/// reactive capabilities to a standard Dart [List].
 class RxList<E> extends GetListenable<List<E>>
     with ListMixin<E>, RxObjectMixin<List<E>> {
   RxList([super.initial = const []]);
@@ -38,7 +41,7 @@ class RxList<E> extends GetListenable<List<E>>
   Iterator<E> get iterator => value.iterator;
 
   @override
-  void operator []=(int index, E val) {
+  void operator []=(int index, covariant E val) {
     value[index] = val;
     refresh();
   }
@@ -58,6 +61,7 @@ class RxList<E> extends GetListenable<List<E>>
   }
 
   @override
+  @pragma('vm:prefer-inline')
   void add(E element) {
     value.add(element);
     refresh();
@@ -72,7 +76,7 @@ class RxList<E> extends GetListenable<List<E>>
   @override
   bool remove(Object? element) {
     final removed = value.remove(element);
-    refresh();
+    if (removed) refresh();
     return removed;
   }
 
@@ -136,11 +140,12 @@ class RxList<E> extends GetListenable<List<E>>
   }
 }
 
+/// Extension methods for [List] that add reactive capabilities.
 extension ListExtension<E> on List<E> {
   RxList<E> get obs => RxList<E>(this);
 
   /// Add [item] to [List<E>] only if [item] is not null.
-  void addNonNull(E item) {
+  void addNonNull(E? item) {
     if (item != null) add(item);
   }
 
@@ -158,22 +163,21 @@ extension ListExtension<E> on List<E> {
 
   /// Replaces all existing items of this list with [item]
   void assign(E item) {
-    // if (this is RxList) {
-    //   (this as RxList)._value;
-    // }
-
-    if (this is RxList) {
-      (this as RxList).value.clear();
+    if (this is RxList<E>) {
+      (this as RxList<E>).value.clear();
+    } else {
+      clear();
     }
     add(item);
   }
 
   /// Replaces all existing items of this list with [items]
   void assignAll(Iterable<E> items) {
-    if (this is RxList) {
-      (this as RxList).value.clear();
+    if (this is RxList<E>) {
+      (this as RxList<E>).value.clear();
+    } else {
+      clear();
     }
-    //clear();
     addAll(items);
   }
 }

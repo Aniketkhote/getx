@@ -1,902 +1,375 @@
 part of '../rx_types.dart';
 
+/// Extension for numeric reactive values.
 extension RxNumExt<T extends num> on Rx<T> {
-  /// Multiplication operator.
-  num operator *(num other) => value * other;
+  /// Addition operator that updates the reactive value.
+  Rx<T> operator +(num other) {
+    value = (value + other) as T;
+    return this;
+  }
 
-  /// Euclidean modulo operator.
+  /// Subtraction operator that updates the reactive value.
+  Rx<T> operator -(num other) {
+    value = (value - other) as T;
+    return this;
+  }
+
+  /// Multiplication operator that updates the reactive value.
+  Rx<T> operator *(num other) {
+    value = (value * other) as T;
+    return this;
+  }
+
+  /// Division operator that updates the reactive value.
+  Rx<double> operator /(num other) {
+    return (value / other).obs;
+  }
+
+  /// Integer division operator that updates the reactive value.
+  Rx<int> operator ~/(num other) {
+    return (value ~/ other).obs;
+  }
+
+  /// Returns the absolute value of this number.
+  Rx<num> abs() => value.abs().obs;
+
+  /// The sign of this number.
   ///
-  /// Returns the remainder of the Euclidean division. The Euclidean division of
-  /// two integers `a` and `b` yields two integers `q` and `r` such that
-  /// `a == b * q + r` and `0 <= r < b.abs()`.
-  ///
-  /// The Euclidean division is only defined for integers, but can be easily
-  /// extended to work with doubles. In that case `r` may have a non-integer
-  /// value, but it still verifies `0 <= r < |b|`.
-  ///
-  /// The sign of the returned value `r` is always positive.
-  ///
-  /// See [remainder] for the remainder of the truncating division.
-  num operator %(num other) => value % other;
-
-  /// Division operator.
-  double operator /(num other) => value / other;
-
-  /// Truncating division operator.
-  ///
-  /// If either operand is a [double] then the result of the truncating division
-  /// `a ~/ b` is equivalent to `(a / b).truncate().toInt()`.
-  ///
-  /// If both operands are [int]s then `a ~/ b` performs the truncating
-  /// integer division.
-  int operator ~/(num other) => value ~/ other;
-
-  /// Negate operator.
-  num operator -() => -value;
-
-  /// Returns the remainder of the truncating division of `this` by [other].
-  ///
-  /// The result `r` of this operation satisfies:
-  /// `this == (this ~/ other) * other + r`.
-  /// As a consequence the remainder `r` has the same sign as the divider
-  /// `this`.
-  num remainder(num other) => value.remainder(other);
-
-  /// Relational less than operator.
-  bool operator <(num other) => value < other;
-
-  /// Relational less than or equal operator.
-  bool operator <=(num other) => value <= other;
-
-  /// Relational greater than operator.
-  bool operator >(num other) => value > other;
-
-  /// Relational greater than or equal operator.
-  bool operator >=(num other) => value >= other;
-
-  /// True if the number is the double Not-a-Number value; otherwise, false.
-  bool get isNaN => value.isNaN;
-
-  /// True if the number is negative; otherwise, false.
-  ///
-  /// Negative numbers are those less than zero, and the double `-0.0`.
-  bool get isNegative => value.isNegative;
-
-  /// True if the number is positive infinity or negative infinity; otherwise,
-  /// false.
-  bool get isInfinite => value.isInfinite;
-
-  /// True if the number is finite; otherwise, false.
-  ///
-  /// The only non-finite numbers are NaN, positive infinity, and
-  /// negative infinity.
-  bool get isFinite => value.isFinite;
-
-  /// Returns the absolute value of this [num].
-  num abs() => value.abs();
-
-  /// Returns minus one, zero or plus one depending on the sign and
-  /// numerical value of the number.
-  ///
-  /// Returns minus one if the number is less than zero,
-  /// plus one if the number is greater than zero,
-  /// and zero if the number is equal to zero.
-  ///
-  /// Returns NaN if the number is the double NaN value.
-  ///
-  /// Returns a number of the same type as this number.
-  /// For doubles, `-0.0.sign == -0.0`.
-  /// The result satisfies:
-  ///
-  ///     n == n.sign * n.abs()
-  ///
-  /// for all numbers `n` (except NaN, because NaN isn't `==` to itself).
+  /// Returns -1.0 if this number is less than 0,
+  /// +1.0 if this number is greater than 0,
+  /// and 0 if this number is equal to 0.
+  /// Returns NaN if this number is NaN.
   num get sign => value.sign;
 
-  /// Returns the integer closest to `this`.
-  ///
-  /// Rounds away from zero when there is no closest integer:
-  ///  `(3.5).round() == 4` and `(-3.5).round() == -4`.
-  ///
-  /// If `this` is not finite (`NaN` or infinity), throws an [UnsupportedError].
-  int round() => value.round();
+  /// Whether this number is negative.
+  bool get isNegative => value.isNegative;
 
-  /// Returns the greatest integer no greater than `this`.
-  ///
-  /// If `this` is not finite (`NaN` or infinity), throws an [UnsupportedError].
-  int floor() => value.floor();
+  /// Whether this number is not a number (NaN).
+  bool get isNaN => value.isNaN;
 
-  /// Returns the least integer no smaller than `this`.
-  ///
-  /// If `this` is not finite (`NaN` or infinity), throws an [UnsupportedError].
-  int ceil() => value.ceil();
+  /// Whether this number is positive infinity or negative infinity.
+  bool get isInfinite => value.isInfinite;
 
-  /// Returns the integer obtained by discarding any fractional
-  /// digits from `this`.
-  ///
-  /// If `this` is not finite (`NaN` or infinity), throws an [UnsupportedError].
-  int truncate() => value.truncate();
-
-  /// Returns the double integer value closest to `this`.
-  ///
-  /// Rounds away from zero when there is no closest integer:
-  ///  `(3.5).roundToDouble() == 4` and `(-3.5).roundToDouble() == -4`.
-  ///
-  /// If this is already an integer valued double, including `-0.0`, or it is a
-  /// non-finite double value, the value is returned unmodified.
-  ///
-  /// For the purpose of rounding, `-0.0` is considered to be below `0.0`,
-  /// and `-0.0` is therefore considered closer to negative numbers than `0.0`.
-  /// This means that for a value, `d` in the range `-0.5 < d < 0.0`,
-  /// the result is `-0.0`.
-  ///
-  /// The result is always a double.
-  /// If this is a numerically large integer, the result may be an infinite
-  /// double.
-  double roundToDouble() => value.roundToDouble();
-
-  /// Returns the greatest double integer value no greater than `this`.
-  ///
-  /// If this is already an integer valued double, including `-0.0`, or it is a
-  /// non-finite double value, the value is returned unmodified.
-  ///
-  /// For the purpose of rounding, `-0.0` is considered to be below `0.0`.
-  /// A number `d` in the range `0.0 < d < 1.0` will return `0.0`.
-  ///
-  /// The result is always a double.
-  /// If this is a numerically large integer, the result may be an infinite
-  /// double.
-  double floorToDouble() => value.floorToDouble();
-
-  /// Returns the least double integer value no smaller than `this`.
-  ///
-  /// If this is already an integer valued double, including `-0.0`, or it is a
-  /// non-finite double value, the value is returned unmodified.
-  ///
-  /// For the purpose of rounding, `-0.0` is considered to be below `0.0`.
-  /// A number `d` in the range `-1.0 < d < 0.0` will return `-0.0`.
-  ///
-  /// The result is always a double.
-  /// If this is a numerically large integer, the result may be an infinite
-  /// double.
-  double ceilToDouble() => value.ceilToDouble();
-
-  /// Returns the double integer value obtained by discarding any fractional
-  /// digits from the double value of `this`.
-  ///
-  /// If this is already an integer valued double, including `-0.0`, or it is a
-  /// non-finite double value, the value is returned unmodified.
-  ///
-  /// For the purpose of rounding, `-0.0` is considered to be below `0.0`.
-  /// A number `d` in the range `-1.0 < d < 0.0` will return `-0.0`, and
-  /// in the range `0.0 < d < 1.0` it will return 0.0.
-  ///
-  /// The result is always a double.
-  /// If this is a numerically large integer, the result may be an infinite
-  /// double.
-  double truncateToDouble() => value.truncateToDouble();
+  /// Whether this number is finite.
+  bool get isFinite => value.isFinite;
 
   /// Returns this [num] clamped to be in the range [lowerLimit]-[upperLimit].
-  ///
-  /// The comparison is done using [compareTo] and therefore takes `-0.0` into
-  /// account. This also implies that [double.nan] is treated as the maximal
-  /// double value.
-  ///
-  /// The arguments [lowerLimit] and [upperLimit] must form a valid range where
-  /// `lowerLimit.compareTo(upperLimit) <= 0`.
-  num clamp(num lowerLimit, num upperLimit) =>
-      value.clamp(lowerLimit, upperLimit);
+  Rx<num> clamp(num lowerLimit, num upperLimit) =>
+      value.clamp(lowerLimit, upperLimit).obs;
 
-  /// Truncates this [num] to an integer and returns the result as an [int]. */
-  int toInt() => value.toInt();
+  /// Converts this number to an integer.
+  Rx<int> toInt() => value.toInt().obs;
 
-  /// Return this [num] as a [double].
-  ///
-  /// If the number is not representable as a [double], an
-  /// approximation is returned. For numerically large integers, the
-  /// approximation may be infinite.
-  double toDouble() => value.toDouble();
-
-  /// Returns a decimal-point string-representation of `this`.
-  ///
-  /// Converts `this` to a [double] before computing the string representation.
-  ///
-  /// If the absolute value of `this` is greater or equal to `10^21` then this
-  /// methods returns an exponential representation computed by
-  /// `this.toStringAsExponential()`. Otherwise the result
-  /// is the closest string representation with exactly [fractionDigits] digits
-  /// after the decimal point. If [fractionDigits] equals 0 then the decimal
-  /// point is omitted.
-  ///
-  /// The parameter [fractionDigits] must be an integer satisfying:
-  /// `0 <= fractionDigits <= 20`.
-  ///
-  /// Examples:
-  ///
-  ///     1.toStringAsFixed(3);  // 1.000
-  ///     (4321.12345678).toStringAsFixed(3);  // 4321.123
-  ///     (4321.12345678).toStringAsFixed(5);  // 4321.12346
-  ///     123456789012345.toStringAsFixed(3);  // 123456789012345.000
-  ///     10000000000000000.toStringAsFixed(4); // 10000000000000000.0000
-  ///     5.25.toStringAsFixed(0); // 5
-  String toStringAsFixed(int fractionDigits) =>
-      value.toStringAsFixed(fractionDigits);
-
-  /// Returns an exponential string-representation of `this`.
-  ///
-  /// Converts `this` to a [double] before computing the string representation.
-  ///
-  /// If [fractionDigits] is given then it must be an integer satisfying:
-  /// `0 <= fractionDigits <= 20`. In this case the string contains exactly
-  /// [fractionDigits] after the decimal point. Otherwise, without the
-  /// parameter, the returned string uses the shortest number of digits that
-  /// accurately represent [this].
-  ///
-  /// If [fractionDigits] equals 0 then the decimal point is omitted.
-  /// Examples:
-  ///
-  ///     1.toStringAsExponential();       // 1e+0
-  ///     1.toStringAsExponential(3);      // 1.000e+0
-  ///     123456.toStringAsExponential();  // 1.23456e+5
-  ///     123456.toStringAsExponential(3); // 1.235e+5
-  ///     123.toStringAsExponential(0);    // 1e+2
-  String toStringAsExponential([int? fractionDigits]) =>
-      value.toStringAsExponential(fractionDigits);
-
-  /// Converts `this` to a double and returns a string representation with
-  /// exactly [precision] significant digits.
-  ///
-  /// The parameter [precision] must be an integer satisfying:
-  /// `1 <= precision <= 21`.
-  ///
-  /// Examples:
-  ///
-  ///     1.toStringAsPrecision(2);       // 1.0
-  ///     1e15.toStringAsPrecision(3);    // 1.00e+15
-  ///     1234567.toStringAsPrecision(3); // 1.23e+6
-  ///     1234567.toStringAsPrecision(9); // 1234567.00
-  ///     12345678901234567890.toStringAsPrecision(20); // 12345678901234567168
-  ///     12345678901234567890.toStringAsPrecision(14); // 1.2345678901235e+19
-  ///     0.00000012345.toStringAsPrecision(15); // 1.23450000000000e-7
-  ///     0.0000012345.toStringAsPrecision(15);  // 0.00000123450000000000
-  String toStringAsPrecision(int precision) =>
-      value.toStringAsPrecision(precision);
+  /// Converts this number to a double.
+  Rx<double> toDouble() => value.toDouble().obs;
 }
 
+/// Extension for nullable numeric reactive values.
 extension RxnNumExt<T extends num> on Rx<T?> {
-  /// Multiplication operator.
-  num? operator *(num other) {
+  /// Addition operator that updates the reactive value if not null.
+  Rx<T?> operator +(num other) {
     if (value != null) {
-      return value! * other;
+      value = (value! + other) as T;
     }
-    return null;
+    return this;
   }
 
-  /// Euclidean modulo operator.
-  ///
-  /// Returns the remainder of the Euclidean division. The Euclidean division of
-  /// two integers `a` and `b` yields two integers `q` and `r` such that
-  /// `a == b * q + r` and `0 <= r < b.abs()`.
-  ///
-  /// The Euclidean division is only defined for integers, but can be easily
-  /// extended to work with doubles. In that case `r` may have a non-integer
-  /// value, but it still verifies `0 <= r < |b|`.
-  ///
-  /// The sign of the returned value `r` is always positive.
-  ///
-  /// See [remainder] for the remainder of the truncating division.
-  num? operator %(num other) {
+  /// Subtraction operator that updates the reactive value if not null.
+  Rx<T?> operator -(num other) {
     if (value != null) {
-      return value! % other;
+      value = (value! - other) as T;
     }
-    return null;
+    return this;
   }
 
-  /// Division operator.
-  double? operator /(num other) {
+  /// Multiplication operator that updates the reactive value if not null.
+  Rx<T?> operator *(num other) {
     if (value != null) {
-      return value! / other;
+      value = (value! * other) as T;
     }
-    return null;
+    return this;
   }
 
-  /// Truncating division operator.
-  ///
-  /// If either operand is a [double] then the result of the truncating division
-  /// `a ~/ b` is equivalent to `(a / b).truncate().toInt()`.
-  ///
-  /// If both operands are [int]s then `a ~/ b` performs the truncating
-  /// integer division.
-  int? operator ~/(num other) {
+  /// Division operator that returns a new reactive double if not null.
+  Rx<double?> operator /(num other) {
     if (value != null) {
-      return value! ~/ other;
+      return (value! / other).obs;
     }
-    return null;
+    return Rx<double?>(null);
   }
 
-  /// Negate operator.
-  num? operator -() {
+  /// Integer division operator that returns a new reactive int if not null.
+  Rx<int?> operator ~/(num other) {
     if (value != null) {
-      return -value!;
+      return (value! ~/ other).obs;
     }
-    return null;
+    return Rx<int?>(null);
   }
 
-  /// Returns the remainder of the truncating division of `this` by [other].
-  ///
-  /// The result `r` of this operation satisfies:
-  /// `this == (this ~/ other) * other + r`.
-  /// As a consequence the remainder `r` has the same sign as the divider
-  /// `this`.
-  num? remainder(num other) => value?.remainder(other);
+  /// Returns the absolute value of this number if not null.
+  Rx<num?> abs() => value?.abs().obs ?? Rx<num?>(null);
 
-  /// Relational less than operator.
-  bool? operator <(num other) {
-    if (value != null) {
-      return value! < other;
-    }
-    return null;
-  }
-
-  /// Relational less than or equal operator.
-  bool? operator <=(num other) {
-    if (value != null) {
-      return value! <= other;
-    }
-    return null;
-  }
-
-  /// Relational greater than operator.
-  bool? operator >(num other) {
-    if (value != null) {
-      return value! > other;
-    }
-    return null;
-  }
-
-  /// Relational greater than or equal operator.
-  bool? operator >=(num other) {
-    if (value != null) {
-      return value! >= other;
-    }
-    return null;
-  }
-
-  /// True if the number is the double Not-a-Number value; otherwise, false.
-  bool? get isNaN => value?.isNaN;
-
-  /// True if the number is negative; otherwise, false.
-  ///
-  /// Negative numbers are those less than zero, and the double `-0.0`.
-  bool? get isNegative => value?.isNegative;
-
-  /// True if the number is positive infinity or negative infinity; otherwise,
-  /// false.
-  bool? get isInfinite => value?.isInfinite;
-
-  /// True if the number is finite; otherwise, false.
-  ///
-  /// The only non-finite numbers are NaN, positive infinity, and
-  /// negative infinity.
-  bool? get isFinite => value?.isFinite;
-
-  /// Returns the absolute value of this [num].
-  num? abs() => value?.abs();
-
-  /// Returns minus one, zero or plus one depending on the sign and
-  /// numerical value of the number.
-  ///
-  /// Returns minus one if the number is less than zero,
-  /// plus one if the number is greater than zero,
-  /// and zero if the number is equal to zero.
-  ///
-  /// Returns NaN if the number is the double NaN value.
-  ///
-  /// Returns a number of the same type as this number.
-  /// For doubles, `-0.0.sign == -0.0`.
-  /// The result satisfies:
-  ///
-  ///     n == n.sign * n.abs()
-  ///
-  /// for all numbers `n` (except NaN, because NaN isn't `==` to itself).
+  /// The sign of this number if not null.
   num? get sign => value?.sign;
 
-  /// Returns the integer closest to `this`.
-  ///
-  /// Rounds away from zero when there is no closest integer:
-  ///  `(3.5).round() == 4` and `(-3.5).round() == -4`.
-  ///
-  /// If `this` is not finite (`NaN` or infinity), throws an [UnsupportedError].
-  int? round() => value?.round();
+  /// Whether this number is negative if not null.
+  bool? get isNegative => value?.isNegative;
 
-  /// Returns the greatest integer no greater than `this`.
-  ///
-  /// If `this` is not finite (`NaN` or infinity), throws an [UnsupportedError].
-  int? floor() => value?.floor();
+  /// Whether this number is not a number (NaN) if not null.
+  bool? get isNaN => value?.isNaN;
 
-  /// Returns the least integer no smaller than `this`.
-  ///
-  /// If `this` is not finite (`NaN` or infinity), throws an [UnsupportedError].
-  int? ceil() => value?.ceil();
+  /// Whether this number is positive infinity or negative infinity if not null.
+  bool? get isInfinite => value?.isInfinite;
 
-  /// Returns the integer obtained by discarding any fractional
-  /// digits from `this`.
-  ///
-  /// If `this` is not finite (`NaN` or infinity), throws an [UnsupportedError].
-  int? truncate() => value?.truncate();
+  /// Whether this number is finite if not null.
+  bool? get isFinite => value?.isFinite;
 
-  /// Returns the double integer value closest to `this`.
-  ///
-  /// Rounds away from zero when there is no closest integer:
-  ///  `(3.5).roundToDouble() == 4` and `(-3.5).roundToDouble() == -4`.
-  ///
-  /// If this is already an integer valued double, including `-0.0`, or it is a
-  /// non-finite double value, the value is returned unmodified.
-  ///
-  /// For the purpose of rounding, `-0.0` is considered to be below `0.0`,
-  /// and `-0.0` is therefore considered closer to negative numbers than `0.0`.
-  /// This means that for a value, `d` in the range `-0.5 < d < 0.0`,
-  /// the result is `-0.0`.
-  ///
-  /// The result is always a double.
-  /// If this is a numerically large integer, the result may be an infinite
-  /// double.
-  double? roundToDouble() => value?.roundToDouble();
+  /// Returns this [num] clamped to be in the range [lowerLimit]-[upperLimit] if not null.
+  Rx<num?> clamp(num lowerLimit, num upperLimit) =>
+      value?.clamp(lowerLimit, upperLimit).obs ?? Rx<num?>(null);
 
-  /// Returns the greatest double integer value no greater than `this`.
-  ///
-  /// If this is already an integer valued double, including `-0.0`, or it is a
-  /// non-finite double value, the value is returned unmodified.
-  ///
-  /// For the purpose of rounding, `-0.0` is considered to be below `0.0`.
-  /// A number `d` in the range `0.0 < d < 1.0` will return `0.0`.
-  ///
-  /// The result is always a double.
-  /// If this is a numerically large integer, the result may be an infinite
-  /// double.
-  double? floorToDouble() => value?.floorToDouble();
-
-  /// Returns the least double integer value no smaller than `this`.
-  ///
-  /// If this is already an integer valued double, including `-0.0`, or it is a
-  /// non-finite double value, the value is returned unmodified.
-  ///
-  /// For the purpose of rounding, `-0.0` is considered to be below `0.0`.
-  /// A number `d` in the range `-1.0 < d < 0.0` will return `-0.0`.
-  ///
-  /// The result is always a double.
-  /// If this is a numerically large integer, the result may be an infinite
-  /// double.
-  double? ceilToDouble() => value?.ceilToDouble();
-
-  /// Returns the double integer value obtained by discarding any fractional
-  /// digits from the double value of `this`.
-  ///
-  /// If this is already an integer valued double, including `-0.0`, or it is a
-  /// non-finite double value, the value is returned unmodified.
-  ///
-  /// For the purpose of rounding, `-0.0` is considered to be below `0.0`.
-  /// A number `d` in the range `-1.0 < d < 0.0` will return `-0.0`, and
-  /// in the range `0.0 < d < 1.0` it will return 0.0.
-  ///
-  /// The result is always a double.
-  /// If this is a numerically large integer, the result may be an infinite
-  /// double.
-  double? truncateToDouble() => value?.truncateToDouble();
-
-  /// Returns this [num] clamped to be in the range [lowerLimit]-[upperLimit].
-  ///
-  /// The comparison is done using [compareTo] and therefore takes `-0.0` into
-  /// account. This also implies that [double.nan] is treated as the maximal
-  /// double value.
-  ///
-  /// The arguments [lowerLimit] and [upperLimit] must form a valid range where
-  /// `lowerLimit.compareTo(upperLimit) <= 0`.
-  num? clamp(num lowerLimit, num upperLimit) =>
-      value?.clamp(lowerLimit, upperLimit);
-
-  /// Truncates this [num] to an integer and returns the result as an [int]. */
-  int? toInt() => value?.toInt();
-
-  /// Return this [num] as a [double].
-  ///
-  /// If the number is not representable as a [double], an
-  /// approximation is returned. For numerically large integers, the
-  /// approximation may be infinite.
-  double? toDouble() => value?.toDouble();
-
-  /// Returns a decimal-point string-representation of `this`.
-  ///
-  /// Converts `this` to a [double] before computing the string representation.
-  ///
-  /// If the absolute value of `this` is greater or equal to `10^21` then this
-  /// methods returns an exponential representation computed by
-  /// `this.toStringAsExponential()`. Otherwise the result
-  /// is the closest string representation with exactly [fractionDigits] digits
-  /// after the decimal point. If [fractionDigits] equals 0 then the decimal
-  /// point is omitted.
-  ///
-  /// The parameter [fractionDigits] must be an integer satisfying:
-  /// `0 <= fractionDigits <= 20`.
-  ///
-  /// Examples:
-  ///
-  ///     1.toStringAsFixed(3);  // 1.000
-  ///     (4321.12345678).toStringAsFixed(3);  // 4321.123
-  ///     (4321.12345678).toStringAsFixed(5);  // 4321.12346
-  ///     123456789012345.toStringAsFixed(3);  // 123456789012345.000
-  ///     10000000000000000.toStringAsFixed(4); // 10000000000000000.0000
-  ///     5.25.toStringAsFixed(0); // 5
-  String? toStringAsFixed(int fractionDigits) =>
-      value?.toStringAsFixed(fractionDigits);
-
-  /// Returns an exponential string-representation of `this`.
-  ///
-  /// Converts `this` to a [double] before computing the string representation.
-  ///
-  /// If [fractionDigits] is given then it must be an integer satisfying:
-  /// `0 <= fractionDigits <= 20`. In this case the string contains exactly
-  /// [fractionDigits] after the decimal point. Otherwise, without the
-  /// parameter, the returned string uses the shortest number of digits that
-  /// accurately represent [this].
-  ///
-  /// If [fractionDigits] equals 0 then the decimal point is omitted.
-  /// Examples:
-  ///
-  ///     1.toStringAsExponential();       // 1e+0
-  ///     1.toStringAsExponential(3);      // 1.000e+0
-  ///     123456.toStringAsExponential();  // 1.23456e+5
-  ///     123456.toStringAsExponential(3); // 1.235e+5
-  ///     123.toStringAsExponential(0);    // 1e+2
-  String? toStringAsExponential([int? fractionDigits]) =>
-      value?.toStringAsExponential(fractionDigits);
-
-  /// Converts `this` to a double and returns a string representation with
-  /// exactly [precision] significant digits.
-  ///
-  /// The parameter [precision] must be an integer satisfying:
-  /// `1 <= precision <= 21`.
-  ///
-  /// Examples:
-  ///
-  ///     1.toStringAsPrecision(2);       // 1.0
-  ///     1e15.toStringAsPrecision(3);    // 1.00e+15
-  ///     1234567.toStringAsPrecision(3); // 1.23e+6
-  ///     1234567.toStringAsPrecision(9); // 1234567.00
-  ///     12345678901234567890.toStringAsPrecision(20); // 12345678901234567168
-  ///     12345678901234567890.toStringAsPrecision(14); // 1.2345678901235e+19
-  ///     0.00000012345.toStringAsPrecision(15); // 1.23450000000000e-7
-  ///     0.0000012345.toStringAsPrecision(15);  // 0.00000123450000000000
-  String? toStringAsPrecision(int precision) =>
-      value?.toStringAsPrecision(precision);
+  /// Converts this number to an integer if not null.
+  /// Converts this number to a double if not null.
+  Rx<double?> toDouble() => value?.toDouble().obs ?? Rx<double?>(null);
 }
 
+/// A reactive [num] value.
+///
+/// This class is a thin wrapper around [Rx<num>] for backward compatibility.
 class RxNum extends Rx<num> {
+  /// Creates a reactive [num] with the provided [initial] value.
   RxNum(super.initial);
 
-  num operator +(num other) {
-    value += other;
-    return value;
-  }
-
-  /// Subtraction operator.
-  num operator -(num other) {
-    value -= other;
-    return value;
-  }
+  /// Creates a reactive [num] with an initial value of 0.
+  RxNum.zero() : super(0);
 }
 
+/// A reactive nullable [num] value.
+///
+/// This class is a thin wrapper around [Rx<num?>] for backward compatibility.
 class RxnNum extends Rx<num?> {
+  /// Creates a reactive nullable [num] with the provided optional [initial] value.
   RxnNum([super.initial]);
 
-  num? operator +(num other) {
-    if (value != null) {
-      value = value! + other;
-      return value;
-    }
-    return null;
-  }
-
-  /// Subtraction operator.
-  num? operator -(num other) {
-    if (value != null) {
-      value = value! - other;
-      return value;
-    }
-    return null;
-  }
+  /// Creates a reactive nullable [num] with an initial value of null.
+  RxnNum.nullValue() : super(null);
 }
 
+/// Extension for reactive double values.
 extension RxDoubleExt on Rx<double> {
-  /// Addition operator.
+  /// Addition operator that updates the reactive value.
   Rx<double> operator +(num other) {
-    value = value + other;
+    value += other;
     return this;
   }
 
-  /// Subtraction operator.
+  /// Subtraction operator that updates the reactive value.
   Rx<double> operator -(num other) {
-    value = value - other;
+    value -= other;
     return this;
   }
 
-  /// Multiplication operator.
-  double operator *(num other) => value * other;
+  /// Multiplication operator that updates the reactive value.
+  Rx<double> operator *(num other) {
+    value *= other;
+    return this;
+  }
 
-  double operator %(num other) => value % other;
+  /// Division operator that returns a new reactive double.
+  Rx<double> operator /(num other) => (value / other).obs;
 
-  /// Division operator.
-  double operator /(num other) => value / other;
+  /// Integer division operator that returns a new reactive int.
+  Rx<int> operator ~/(num other) => (value ~/ other).obs;
 
-  /// Truncating division operator.
-  ///
-  /// The result of the truncating division `a ~/ b` is equivalent to
-  /// `(a / b).truncate()`.
-  int operator ~/(num other) => value ~/ other;
+  /// Returns the absolute value of this double.
+  Rx<double> abs() => value.abs().obs;
 
-  /// Negate operator. */
-  double operator -() => -value;
-
-  /// Returns the absolute value of this [double].
-  double abs() => value.abs();
-
-  /// Returns the sign of the double's numerical value.
+  /// The sign of this double's value.
   ///
   /// Returns -1.0 if the value is less than zero,
   /// +1.0 if the value is greater than zero,
   /// and the value itself if it is -0.0, 0.0 or NaN.
   double get sign => value.sign;
 
-  /// Returns the integer closest to `this`.
-  ///
-  /// Rounds away from zero when there is no closest integer:
-  ///  `(3.5).round() == 4` and `(-3.5).round() == -4`.
-  ///
-  /// If `this` is not finite (`NaN` or infinity), throws an [UnsupportedError].
-  int round() => value.round();
+  /// Whether this number is negative.
+  bool get isNegative => value.isNegative;
 
-  /// Returns the greatest integer no greater than `this`.
-  ///
-  /// If `this` is not finite (`NaN` or infinity), throws an [UnsupportedError].
-  int floor() => value.floor();
+  /// Whether this number is not a number (NaN).
+  bool get isNaN => value.isNaN;
 
-  /// Returns the least integer no smaller than `this`.
-  ///
-  /// If `this` is not finite (`NaN` or infinity), throws an [UnsupportedError].
-  int ceil() => value.ceil();
+  /// Whether this number is positive infinity or negative infinity.
+  bool get isInfinite => value.isInfinite;
 
-  /// Returns the integer obtained by discarding any fractional
-  /// digits from `this`.
-  ///
-  /// If `this` is not finite (`NaN` or infinity), throws an [UnsupportedError].
-  int truncate() => value.truncate();
+  /// Whether this number is finite.
+  bool get isFinite => value.isFinite;
 
-  /// Returns the integer double value closest to `this`.
-  ///
-  /// Rounds away from zero when there is no closest integer:
-  ///  `(3.5).roundToDouble() == 4` and `(-3.5).roundToDouble() == -4`.
-  ///
-  /// If this is already an integer valued double, including `-0.0`, or it is
-  /// not a finite value, the value is returned unmodified.
-  ///
-  /// For the purpose of rounding, `-0.0` is considered to be below `0.0`,
-  /// and `-0.0` is therefore considered closer to negative numbers than `0.0`.
-  /// This means that for a value, `d` in the range `-0.5 < d < 0.0`,
-  /// the result is `-0.0`.
-  double roundToDouble() => value.roundToDouble();
+  /// Rounds this number to the nearest integer.
+  Rx<int> round() => value.round().obs;
 
-  /// Returns the greatest integer double value no greater than `this`.
-  ///
-  /// If this is already an integer valued double, including `-0.0`, or it is
-  /// not a finite value, the value is returned unmodified.
-  ///
-  /// For the purpose of rounding, `-0.0` is considered to be below `0.0`.
-  /// A number `d` in the range `0.0 < d < 1.0` will return `0.0`.
-  double floorToDouble() => value.floorToDouble();
+  /// Returns the greatest integer no greater than this number.
+  Rx<int> floor() => value.floor().obs;
 
-  /// Returns the least integer double value no smaller than `this`.
-  ///
-  /// If this is already an integer valued double, including `-0.0`, or it is
-  /// not a finite value, the value is returned unmodified.
-  ///
-  /// For the purpose of rounding, `-0.0` is considered to be below `0.0`.
-  /// A number `d` in the range `-1.0 < d < 0.0` will return `-0.0`.
-  double ceilToDouble() => value.ceilToDouble();
+  /// Returns the least integer no smaller than this number.
+  Rx<int> ceil() => value.ceil().obs;
 
-  /// Returns the integer double value obtained by discarding any fractional
-  /// digits from `this`.
-  ///
-  /// If this is already an integer valued double, including `-0.0`, or it is
-  /// not a finite value, the value is returned unmodified.
-  ///
-  /// For the purpose of rounding, `-0.0` is considered to be below `0.0`.
-  /// A number `d` in the range `-1.0 < d < 0.0` will return `-0.0`, and
-  /// in the range `0.0 < d < 1.0` it will return 0.0.
-  double truncateToDouble() => value.truncateToDouble();
+  /// Returns the integer obtained by discarding any fractional digits.
+  Rx<int> truncate() => value.truncate().obs;
+
+  /// Rounds this number to the nearest integer as a double.
+  Rx<double> roundToDouble() => value.roundToDouble().obs;
+
+  /// Returns the greatest integer no greater than this number as a double.
+  Rx<double> floorToDouble() => value.floorToDouble().obs;
+
+  /// Returns the least integer no smaller than this number as a double.
+  Rx<double> ceilToDouble() => value.ceilToDouble().obs;
+
+  /// Returns the integer obtained by discarding any fractional digits as a double.
+  Rx<double> truncateToDouble() => value.truncateToDouble().obs;
 }
 
+/// Extension for reactive nullable double values.
 extension RxnDoubleExt on Rx<double?> {
-  /// Addition operator.
-  Rx<double?>? operator +(num other) {
-    if (value != null) {
-      value = value! + other;
-      return this;
-    }
-    return null;
-  }
-
-  /// Subtraction operator.
-  Rx<double?>? operator -(num other) {
-    if (value != null) {
-      value = value! + other;
-      return this;
-    }
-    return null;
-  }
-
-  /// Multiplication operator.
-  double? operator *(num other) {
-    if (value != null) {
-      return value! * other;
-    }
-    return null;
-  }
-
-  double? operator %(num other) {
-    if (value != null) {
-      return value! % other;
-    }
-    return null;
-  }
-
-  /// Division operator.
-  double? operator /(num other) {
-    if (value != null) {
-      return value! / other;
-    }
-    return null;
-  }
-
-  /// Truncating division operator.
-  ///
-  /// The result of the truncating division `a ~/ b` is equivalent to
-  /// `(a / b).truncate()`.
-  int? operator ~/(num other) {
-    if (value != null) {
-      return value! ~/ other;
-    }
-    return null;
-  }
-
-  /// Negate operator. */
-  double? operator -() {
-    if (value != null) {
-      return -value!;
-    }
-    return null;
-  }
-
-  /// Returns the absolute value of this [double].
-  double? abs() {
-    return value?.abs();
-  }
-
-  /// Returns the sign of the double's numerical value.
-  ///
-  /// Returns -1.0 if the value is less than zero,
-  /// +1.0 if the value is greater than zero,
-  /// and the value itself if it is -0.0, 0.0 or NaN.
-  double? get sign => value?.sign;
-
-  /// Returns the integer closest to `this`.
-  ///
-  /// Rounds away from zero when there is no closest integer:
-  ///  `(3.5).round() == 4` and `(-3.5).round() == -4`.
-  ///
-  /// If `this` is not finite (`NaN` or infinity), throws an [UnsupportedError].
-  int? round() => value?.round();
-
-  /// Returns the greatest integer no greater than `this`.
-  ///
-  /// If `this` is not finite (`NaN` or infinity), throws an [UnsupportedError].
-  int? floor() => value?.floor();
-
-  /// Returns the least integer no smaller than `this`.
-  ///
-  /// If `this` is not finite (`NaN` or infinity), throws an [UnsupportedError].
-  int? ceil() => value?.ceil();
-
-  /// Returns the integer obtained by discarding any fractional
-  /// digits from `this`.
-  ///
-  /// If `this` is not finite (`NaN` or infinity), throws an [UnsupportedError].
-  int? truncate() => value?.truncate();
-
-  /// Returns the integer double value closest to `this`.
-  ///
-  /// Rounds away from zero when there is no closest integer:
-  ///  `(3.5).roundToDouble() == 4` and `(-3.5).roundToDouble() == -4`.
-  ///
-  /// If this is already an integer valued double, including `-0.0`, or it is
-  /// not a finite value, the value is returned unmodified.
-  ///
-  /// For the purpose of rounding, `-0.0` is considered to be below `0.0`,
-  /// and `-0.0` is therefore considered closer to negative numbers than `0.0`.
-  /// This means that for a value, `d` in the range `-0.5 < d < 0.0`,
-  /// the result is `-0.0`.
-  double? roundToDouble() => value?.roundToDouble();
-
-  /// Returns the greatest integer double value no greater than `this`.
-  ///
-  /// If this is already an integer valued double, including `-0.0`, or it is
-  /// not a finite value, the value is returned unmodified.
-  ///
-  /// For the purpose of rounding, `-0.0` is considered to be below `0.0`.
-  /// A number `d` in the range `0.0 < d < 1.0` will return `0.0`.
-  double? floorToDouble() => value?.floorToDouble();
-
-  /// Returns the least integer double value no smaller than `this`.
-  ///
-  /// If this is already an integer valued double, including `-0.0`, or it is
-  /// not a finite value, the value is returned unmodified.
-  ///
-  /// For the purpose of rounding, `-0.0` is considered to be below `0.0`.
-  /// A number `d` in the range `-1.0 < d < 0.0` will return `-0.0`.
-  double? ceilToDouble() => value?.ceilToDouble();
-
-  /// Returns the integer double value obtained by discarding any fractional
-  /// digits from `this`.
-  ///
-  /// If this is already an integer valued double, including `-0.0`, or it is
-  /// not a finite value, the value is returned unmodified.
-  ///
-  /// For the purpose of rounding, `-0.0` is considered to be below `0.0`.
-  /// A number `d` in the range `-1.0 < d < 0.0` will return `-0.0`, and
-  /// in the range `0.0 < d < 1.0` it will return 0.0.
-  double? truncateToDouble() => value?.truncateToDouble();
-}
-
-class RxDouble extends Rx<double> {
-  RxDouble(super.initial);
-}
-
-class RxnDouble extends Rx<double?> {
-  RxnDouble([super.initial]);
-}
-
-class RxInt extends Rx<int> {
-  RxInt(super.initial);
-
-  /// Addition operator.
-  RxInt operator +(int other) {
-    value = value + other;
-    return this;
-  }
-
-  /// Subtraction operator.
-  RxInt operator -(int other) {
-    value = value - other;
-    return this;
-  }
-}
-
-class RxnInt extends Rx<int?> {
-  RxnInt([super.initial]);
-
-  /// Addition operator.
-  RxnInt operator +(int other) {
+  /// Addition operator that updates the reactive value if not null.
+  Rx<double?> operator +(num other) {
     if (value != null) {
       value = value! + other;
     }
     return this;
   }
 
-  /// Subtraction operator.
-  RxnInt operator -(int other) {
+  /// Subtraction operator that updates the reactive value if not null.
+  Rx<double?> operator -(num other) {
     if (value != null) {
       value = value! - other;
     }
     return this;
+  }
+
+  /// Multiplication operator that updates the reactive value if not null.
+  Rx<double?> operator *(num other) {
+    if (value != null) {
+      value = value! * other;
+    }
+    return this;
+  }
+
+  /// Division operator that returns a new reactive double if not null.
+  Rx<double?> operator /(num other) {
+    if (value != null) {
+      return (value! / other).obs;
+    }
+    return Rx<double?>(null);
+  }
+
+  /// Integer division operator that returns a new reactive int if not null.
+  Rx<int?> operator ~/(num other) {
+    if (value != null) {
+      return (value! ~/ other).obs;
+    }
+    return Rx<int?>(null);
+  }
+
+  /// Returns the absolute value of this double if not null.
+  Rx<double?> abs() => value?.abs().obs ?? Rx<double?>(null);
+
+  /// The sign of this double's value if not null.
+  double? get sign => value?.sign;
+
+  /// Whether this number is negative if not null.
+  bool? get isNegative => value?.isNegative;
+
+  /// Whether this number is not a number (NaN) if not null.
+  bool? get isNaN => value?.isNaN;
+
+  /// Whether this number is positive infinity or negative infinity if not null.
+  bool? get isInfinite => value?.isInfinite;
+
+  /// Whether this number is finite if not null.
+  bool? get isFinite => value?.isFinite;
+
+  /// Rounds this number to the nearest integer if not null.
+  Rx<int?> round() => value?.round().obs ?? Rx<int?>(null);
+
+  /// Returns the greatest integer no greater than this number if not null.
+  Rx<int?> floor() => value?.floor().obs ?? Rx<int?>(null);
+
+  /// Returns the least integer no smaller than this number if not null.
+  Rx<int?> ceil() => value?.ceil().obs ?? Rx<int?>(null);
+
+  /// Returns the integer obtained by discarding any fractional digits if not null.
+  Rx<int?> truncate() => value?.truncate().obs ?? Rx<int?>(null);
+
+  /// Rounds this number to the nearest integer as a double if not null.
+  Rx<double?> roundToDouble() => value?.roundToDouble().obs ?? Rx<double?>(null);
+
+  /// Returns the greatest integer no greater than this number as a double if not null.
+  Rx<double?> floorToDouble() => value?.floorToDouble().obs ?? Rx<double?>(null);
+
+  /// Returns the least integer no smaller than this number as a double if not null.
+  Rx<double?> ceilToDouble() => value?.ceilToDouble().obs ?? Rx<double?>(null);
+
+  /// Returns the integer obtained by discarding any fractional digits as a double if not null.
+  Rx<double?> truncateToDouble() => value?.truncateToDouble().obs ?? Rx<double?>(null);
+}
+
+/// A reactive [double] value.
+///
+/// This class is a thin wrapper around [Rx<double>] for backward compatibility.
+class RxDouble extends Rx<double> {
+  /// Creates a reactive [double] with the provided [initial] value.
+  RxDouble(super.initial);
+
+  /// Creates a reactive [double] with an initial value of 0.0.
+  RxDouble.zero() : super(0.0);
+}
+
+/// A reactive nullable [double] value.
+///
+/// This class is a thin wrapper around [Rx<double?>] for backward compatibility.
+class RxnDouble extends Rx<double?> {
+  /// Creates a reactive nullable [double] with the provided optional [initial] value.
+  RxnDouble([super.initial]);
+
+  /// Creates a reactive nullable [double] with an initial value of null.
+  RxnDouble.nullValue() : super(null);
+}
+
+/// A reactive [int] value.
+///
+/// This class is a thin wrapper around [Rx<int>] for backward compatibility.
+class RxInt extends Rx<int> {
+  /// Creates a reactive [int] with the provided [initial] value.
+  RxInt(super.initial);
+
+  /// Creates a reactive [int] with an initial value of 0.
+  RxInt.zero() : super(0);
+
+  /// Increments the value by 1.
+  void increment() => value++;
+
+  /// Decrements the value by 1.
+  void decrement() => value--;
+}
+
+/// A reactive nullable [int] value.
+///
+/// This class is a thin wrapper around [Rx<int?>] for backward compatibility.
+class RxnInt extends Rx<int?> {
+  /// Creates a reactive nullable [int] with the provided optional [initial] value.
+  RxnInt([super.initial]);
+
+  /// Creates a reactive nullable [int] with an initial value of null.
+  RxnInt.nullValue() : super(null);
+
+  /// Increments the value by 1 if not null.
+  void increment() {
+    if (value != null) value = value! + 1;
+  }
+
+  /// Decrements the value by 1 if not null.
+  void decrement() {
+    if (value != null) value = value! - 1;
   }
 }
 

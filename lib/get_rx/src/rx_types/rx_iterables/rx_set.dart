@@ -1,18 +1,28 @@
 part of '../rx_types.dart';
 
+/// A reactive set that notifies listeners when modified.
+///
+/// This class extends [SetMixin] and [RxObjectMixin] to provide
+/// reactive capabilities to a standard Dart [Set].
 class RxSet<E> extends GetListenable<Set<E>>
     with SetMixin<E>, RxObjectMixin<Set<E>> {
   RxSet([super.initial = const {}]);
 
-  /// Special override to push() element(s) in a reactive way
-  /// inside the List,
+  /// Adds all elements from another set and returns this [RxSet].
+  ///
+  /// This is a convenience operator that allows using the + operator
+  /// to add multiple elements in a chainable way.
+  @pragma('vm:prefer-inline')
   RxSet<E> operator +(Set<E> val) {
     addAll(val);
-    //refresh();
     return this;
   }
 
-  void update(void Function(Iterable<E>? value) fn) {
+  /// Updates the set by applying the given function to the current value.
+  ///
+  /// The function receives the current set value and should modify it directly.
+  /// The changes will be automatically reflected and listeners will be notified.
+  void update(void Function(Set<E> value) fn) {
     fn(value);
     refresh();
   }
@@ -34,11 +44,10 @@ class RxSet<E> extends GetListenable<Set<E>>
   // }
 
   @override
+  @pragma('vm:prefer-inline')
   bool add(E value) {
     final hasAdded = this.value.add(value);
-    if (hasAdded) {
-      refresh();
-    }
+    if (hasAdded) refresh();
     return hasAdded;
   }
 
@@ -59,11 +68,10 @@ class RxSet<E> extends GetListenable<Set<E>>
   }
 
   @override
+  @pragma('vm:prefer-inline')
   bool remove(Object? value) {
-    var hasRemoved = this.value.remove(value);
-    if (hasRemoved) {
-      refresh();
-    }
+    final hasRemoved = this.value.remove(value);
+    if (hasRemoved) refresh();
     return hasRemoved;
   }
 
@@ -103,6 +111,7 @@ class RxSet<E> extends GetListenable<Set<E>>
   }
 }
 
+/// Extension methods for [Set] that add reactive capabilities.
 extension SetExtension<E> on Set<E> {
   RxSet<E> get obs {
     return RxSet<E>(<E>{})..addAll(this);
@@ -118,34 +127,47 @@ extension SetExtension<E> on Set<E> {
   //   if (item != null) addAll(item);
   // }
 
-  /// Add [item] to [List<E>] only if [condition] is true.
+  /// Adds [item] to this set if [condition] is true.
+  ///
+  /// If [condition] is a [Condition] instance, it will be evaluated.
   void addIf(dynamic condition, E item) {
-    if (condition is Condition) condition = condition();
-    if (condition is bool && condition) add(item);
+    final shouldAdd = condition is Condition ? condition() : condition;
+    if (shouldAdd == true) add(item);
   }
 
-  /// Adds [Iterable<E>] to [List<E>] only if [condition] is true.
+  /// Adds all elements from [items] to this set if [condition] is true.
+  ///
+  /// If [condition] is a [Condition] instance, it will be evaluated.
   void addAllIf(dynamic condition, Iterable<E> items) {
-    if (condition is Condition) condition = condition();
-    if (condition is bool && condition) addAll(items);
+    final shouldAdd = condition is Condition ? condition() : condition;
+    if (shouldAdd == true) addAll(items);
   }
 
-  /// Replaces all existing items of this list with [item]
+  /// Replaces all existing items in this set with a single [item].
+  ///
+  /// If this is an [RxSet], it will properly handle the reactive updates.
   void assign(E item) {
-    // if (this is RxSet) {
-    //   (this as RxSet)._value;
-    // }
-
-    clear();
-    add(item);
+    if (this is RxSet<E>) {
+      final set = this as RxSet<E>;
+      set.value.clear();
+      set.add(item);
+    } else {
+      clear();
+      add(item);
+    }
   }
 
-  /// Replaces all existing items of this list with [items]
+  /// Replaces all existing items in this set with [items].
+  ///
+  /// If this is an [RxSet], it will properly handle the reactive updates.
   void assignAll(Iterable<E> items) {
-    // if (this is RxSet) {
-    //   (this as RxSet)._value;
-    // }
-    clear();
-    addAll(items);
+    if (this is RxSet<E>) {
+      final set = this as RxSet<E>;
+      set.value.clear();
+      set.addAll(items);
+    } else {
+      clear();
+      addAll(items);
+    }
   }
 }

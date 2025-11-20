@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter/widgets.dart';
 
 import '../../../get.dart';
@@ -7,6 +8,8 @@ mixin GetResponsiveMixin on Widget {
   bool get alwaysUseBuilder;
 
   @protected
+  @mustCallSuper
+  @visibleForOverriding
   Widget build(BuildContext context) {
     screen.context = context;
     Widget? widget;
@@ -29,14 +32,19 @@ mixin GetResponsiveMixin on Widget {
     return watch() ?? phone() ?? tablet() ?? desktop() ?? builder()!;
   }
 
+  @protected
   Widget? builder() => null;
 
+  @protected
   Widget? desktop() => null;
 
+  @protected
   Widget? phone() => null;
 
+  @protected
   Widget? tablet() => null;
 
+  @protected
   Widget? watch() => null;
 }
 
@@ -81,6 +89,7 @@ class GetResponsiveWidget<T extends GetLifeCycleMixin> extends GetWidget<T>
   }) : screen = ResponsiveScreen(settings);
 }
 
+@immutable
 class ResponsiveScreenSettings {
   /// When the width is greater als this value
   /// the display will be set as [ScreenType.Desktop]
@@ -108,32 +117,27 @@ class ResponsiveScreen {
   late BuildContext context;
   final ResponsiveScreenSettings settings;
 
-  late bool _isPlatformDesktop;
-  ResponsiveScreen(this.settings) {
-    _isPlatformDesktop = GetPlatform.isDesktop;
-  }
+  late final bool _isPlatformDesktop = GetPlatform.isDesktop;
+  
+  ResponsiveScreen(this.settings);
 
   double get height => context.height;
   double get width => context.width;
 
-  /// Is [screenType] [ScreenType.Desktop]
-  bool get isDesktop => (screenType == ScreenType.desktop);
+  /// Is [screenType] [ScreenType.desktop]
+  bool get isDesktop => screenType == ScreenType.desktop;
 
-  /// Is [screenType] [ScreenType.Tablet]
-  bool get isTablet => (screenType == ScreenType.tablet);
+  /// Is [screenType] [ScreenType.tablet]
+  bool get isTablet => screenType == ScreenType.tablet;
 
-  /// Is [screenType] [ScreenType.Phone]
-  bool get isPhone => (screenType == ScreenType.phone);
+  /// Is [screenType] [ScreenType.phone]
+  bool get isPhone => screenType == ScreenType.phone;
 
-  /// Is [screenType] [ScreenType.Watch]
-  bool get isWatch => (screenType == ScreenType.watch);
+  /// Is [screenType] [ScreenType.watch]
+  bool get isWatch => screenType == ScreenType.watch;
 
-  double get _getDeviceWidth {
-    if (_isPlatformDesktop) {
-      return width;
-    }
-    return context.mediaQueryShortestSide;
-  }
+  @protected
+  double get _getDeviceWidth => _isPlatformDesktop ? width : context.mediaQueryShortestSide;
 
   ScreenType get screenType {
     final deviceWidth = _getDeviceWidth;
@@ -163,8 +167,16 @@ class ResponsiveScreen {
 }
 
 enum ScreenType {
-  watch,
-  phone,
-  tablet,
-  desktop,
+  watch._(0),
+  phone._(1),
+  tablet._(2),
+  desktop._(3);
+
+  const ScreenType._(this.value);
+  final int value;
+  
+  bool operator >(ScreenType other) => value > other.value;
+  bool operator >=(ScreenType other) => value >= other.value;
+  bool operator <(ScreenType other) => value < other.value;
+  bool operator <=(ScreenType other) => value <= other.value;
 }

@@ -2,7 +2,6 @@ import 'dart:async';
 
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
-import 'package:get/utils.dart';
 
 import '../../../get_rx/src/rx_types/rx_types.dart';
 import '../../../instance_manager.dart';
@@ -27,7 +26,7 @@ extension _Empty on Object {
 
 mixin StateMixin<T> on ListNotifier {
   T? _value;
-  GetStatus<T>? _status;
+  GetStatus<T> _status = GetStatus.loading();
 
   void _fillInitialStatus() {
     _status = (_value == null || _value!._isEmpty())
@@ -37,7 +36,7 @@ mixin StateMixin<T> on ListNotifier {
 
   GetStatus<T> get status {
     reportRead();
-    return _status ??= _status = GetStatus.loading();
+    return _status;
   }
 
   T get state => value;
@@ -54,7 +53,11 @@ mixin StateMixin<T> on ListNotifier {
   @protected
   T get value {
     reportRead();
-    return _value as T;
+    final value = _value;
+    if (value == null) {
+      throw StateError('Value not initialized. Call setSuccess() first.');
+    }
+    return value;
   }
 
   @protected
@@ -87,24 +90,26 @@ mixin StateMixin<T> on ListNotifier {
     change(GetStatus<T>.empty());
   }
 
-  void futurize(Future<T> Function() body,
-      {T? initialData, String? errorMessage, bool useEmpty = true}) {
-    final compute = body;
+  Future<void> futurize(
+    Future<T> Function() body, {
+    T? initialData,
+    String? errorMessage,
+    bool useEmpty = true,
+  }) async {
     _value ??= initialData;
     status = GetStatus<T>.loading();
-    compute().then((newValue) {
+
+    try {
+      final newValue = await body();
       if ((newValue == null || newValue._isEmpty()) && useEmpty) {
         status = GetStatus<T>.empty();
       } else {
         status = GetStatus<T>.success(newValue);
       }
-
-      refresh();
-    }, onError: (err) {
-      status = GetStatus.error(
-          err is Exception ? err : Exception(errorMessage ?? err.toString()));
-      refresh();
-    });
+    } catch (err) {
+      final error = err is Exception ? err : Exception(errorMessage ?? err.toString());
+      status = GetStatus<T>.error(error);
+    }
   }
 }
 
@@ -122,8 +127,6 @@ class GetListenable<T> extends ListNotifierSingle implements RxInterface<T> {
       _controller =
           StreamController<T>.broadcast(onCancel: addListener(_streamListener));
       _controller?.add(_value);
-
-      ///TODO: report to controller dispose
     }
     return _controller!;
   }
@@ -241,29 +244,23 @@ extension StateExt<T> on StateMixin<T> {
     WidgetBuilder? onCustom,
   }) {
     return Observer(builder: (context) {
-      if (status.isLoading) {
-        return onLoading ?? const Center(child: CircularProgressIndicator());
-      } else if (status.isError) {
-        return onError != null
-            ? onError(status.errorMessage)
-            : Center(child: Text('A error occurred: ${status.errorMessage}'));
-      } else if (status.isEmpty) {
-        return onEmpty ??
-            const SizedBox.shrink(); // Also can be widget(null); but is risky
-      } else if (status.isSuccess) {
-        return widget(value);
-      } else if (status.isCustom) {
-        return onCustom?.call(context) ??
-            const SizedBox.shrink(); // Also can be widget(null); but is risky
-      }
-      return widget(value);
+      return status.when(
+        loading: () =>
+            onLoading ?? const Center(child: CircularProgressIndicator()),
+        success: (data) => widget(data),
+        error: (error) =>
+            onError?.call(error.toString()) ??
+            Center(child: Text('An error occurred: $error')),
+        empty: () => onEmpty ?? const SizedBox.shrink(),
+        custom: onCustom != null ? () => onCustom(context) : null,
+      );
     });
   }
 }
 
 typedef NotifierBuilder<T> = Widget Function(T state);
 
-abstract class GetStatus<T> with Equality {
+sealed class GetStatus<T> {
   const GetStatus();
 
   factory GetStatus.loading() => LoadingStatus<T>();
@@ -278,22 +275,23 @@ abstract class GetStatus<T> with Equality {
 }
 
 class CustomStatus<T> extends GetStatus<T> {
-  @override
-  List get props => [];
+  const CustomStatus();
 }
 
 class LoadingStatus<T> extends GetStatus<T> {
-  @override
-  List get props => [];
+  const LoadingStatus();
 }
 
 class SuccessStatus<T> extends GetStatus<T> {
   final T data;
-
   const SuccessStatus(this.data);
 
   @override
-  List get props => [data];
+  bool operator ==(Object other) =>
+      identical(this, other) || other is SuccessStatus<T> && other.data == data;
+
+  @override
+  int get hashCode => data.hashCode;
 }
 
 class ErrorStatus<T, S> extends GetStatus<T> {
@@ -302,12 +300,19 @@ class ErrorStatus<T, S> extends GetStatus<T> {
   const ErrorStatus([this.error]);
 
   @override
-  List get props => [error];
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      other is ErrorStatus<T, S> && other.error == error;
+
+  @override
+  int get hashCode => error.hashCode;
+  
+  @override
+  String toString() => 'ErrorStatus($error)';
 }
 
 class EmptyStatus<T> extends GetStatus<T> {
-  @override
-  List get props => [];
+  const EmptyStatus();
 }
 
 extension StatusDataExt<T> on GetStatus<T> {
@@ -321,9 +326,9 @@ extension StatusDataExt<T> on GetStatus<T> {
 
   bool get isCustom => !isLoading && !isSuccess && !isError && !isEmpty;
 
-  dynamic get error {
-    if (this is ErrorStatus) {
-      return (this as ErrorStatus).error;
+  Object? get error {
+    if (this case ErrorStatus(error: final error?)) {
+      return error is Exception ? error : Exception(error.toString());
     }
     return null;
   }
@@ -349,5 +354,37 @@ extension StatusDataExt<T> on GetStatus<T> {
       return success.data;
     }
     return null;
+  }
+}
+
+/// Pattern matching for [GetStatus] states.
+///
+/// Example:
+/// ```dart
+/// final result = status.when(
+///   loading: () => 'Loading...',
+///   success: (data) => 'Data: $data',
+///   error: (error) => 'Error: $error',
+///   empty: () => 'No data',
+///   custom: () => 'Custom state',
+/// );
+/// ```
+extension StatusExtensions<T> on GetStatus<T> {
+  R when<R>({
+    required R Function() loading,
+    required R Function(T data) success,
+    required R Function(Object error) error,
+    required R Function() empty,
+    R Function()? custom,
+  }) {
+    return switch (this) {
+      LoadingStatus() => loading(),
+      SuccessStatus(data: final data) => success(data),
+      ErrorStatus(error: final e) =>
+        error(e is Exception ? e : Exception(e.toString())),
+      EmptyStatus() => empty(),
+      CustomStatus() => custom?.call() ?? empty(),
+      _ => throw StateError('Unknown status type: $this'),
+    };
   }
 }

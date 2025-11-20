@@ -10,8 +10,6 @@ extension GetNumUtils on num {
   bool isEqual(num b) => GetUtils.isEqual(this, b);
 
   /// Utility to delay some callback (or code execution).
-  /// TODO: Add a separated implementation of delay() with the ability
-  /// to stop it.
   ///
   /// Sample:
   /// ```

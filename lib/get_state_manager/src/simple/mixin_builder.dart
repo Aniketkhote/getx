@@ -5,7 +5,6 @@ import 'get_controllers.dart';
 import 'get_state.dart';
 
 class MixinBuilder<T extends GetxController> extends StatelessWidget {
-  @required
   final Widget Function(T) builder;
   final bool global;
   final String? id;
@@ -41,6 +40,6 @@ class MixinBuilder<T extends GetxController> extends StatelessWidget {
         id: id,
         didChangeDependencies: didChangeDependencies,
         didUpdateWidget: didUpdateWidget,
-        builder: (controller) => Obx(() => builder.call(controller)));
+        builder: (controller) => Obx(() => builder(controller)));
   }
 }
