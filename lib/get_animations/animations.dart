@@ -1,13 +1,16 @@
-import 'dart:math';
+import 'dart:math' as math;
 import 'dart:ui';
 
 import 'package:flutter/widgets.dart';
 
 import 'get_animated_builder.dart';
 
-typedef OffsetBuilder = Offset Function(BuildContext, double);
+/// Signature for building an [Offset] based on the animation value.
+typedef OffsetBuilder = Offset Function(BuildContext context, double value);
 
+/// A fade-in animation that transitions a widget's opacity from 0 to 1.
 class FadeInAnimation extends OpacityAnimation {
+  /// Creates a fade-in animation.
   FadeInAnimation({
     super.key,
     required super.duration,
@@ -20,7 +23,9 @@ class FadeInAnimation extends OpacityAnimation {
   });
 }
 
+/// A fade-out animation that transitions a widget's opacity from 1 to 0.
 class FadeOutAnimation extends OpacityAnimation {
+  /// Creates a fade-out animation.
   FadeOutAnimation({
     super.key,
     required super.duration,
@@ -33,7 +38,9 @@ class FadeOutAnimation extends OpacityAnimation {
   });
 }
 
+/// A base class for opacity-based animations.
 class OpacityAnimation extends GetAnimatedBuilder<double> {
+  /// Creates an opacity animation.
   OpacityAnimation({
     super.key,
     required super.duration,
@@ -45,7 +52,8 @@ class OpacityAnimation extends GetAnimatedBuilder<double> {
     required super.idleValue,
   }) : super(
           tween: Tween<double>(begin: begin, end: end),
-          builder: (context, value, child) {
+          builder: (BuildContext context, double value, Widget? child) {
+            assert(child != null, 'Child widget must not be null');
             return Opacity(
               opacity: value,
               child: child!,
@@ -54,7 +62,9 @@ class OpacityAnimation extends GetAnimatedBuilder<double> {
         );
 }
 
+/// A rotation animation that rotates a widget around its center.
 class RotateAnimation extends GetAnimatedBuilder<double> {
+  /// Creates a rotation animation.
   RotateAnimation({
     super.key,
     required super.duration,
@@ -65,15 +75,18 @@ class RotateAnimation extends GetAnimatedBuilder<double> {
     required double end,
     super.idleValue = 0,
   }) : super(
-          builder: (context, value, child) => Transform.rotate(
-            angle: value,
-            child: child,
-          ),
+          builder: (BuildContext context, double value, Widget? child) => 
+              Transform.rotate(
+                angle: 2 * math.pi * value,
+                child: child,
+              ),
           tween: Tween<double>(begin: begin, end: end),
         );
 }
 
+/// A scale animation that changes the size of a widget.
 class ScaleAnimation extends GetAnimatedBuilder<double> {
+  /// Creates a scale animation.
   ScaleAnimation({
     super.key,
     required super.duration,
@@ -84,10 +97,11 @@ class ScaleAnimation extends GetAnimatedBuilder<double> {
     required double end,
     super.idleValue = 0,
   }) : super(
-          builder: (context, value, child) => Transform.scale(
-            scale: value,
-            child: child,
-          ),
+          builder: (BuildContext context, double value, Widget? child) => 
+              Transform.scale(
+                scale: value,
+                child: child,
+              ),
           tween: Tween<double>(begin: begin, end: end),
         );
 }
@@ -141,7 +155,7 @@ class SpinAnimation extends GetAnimatedBuilder<double> {
     super.idleValue = 0,
   }) : super(
           builder: (context, value, child) => Transform.rotate(
-            angle: value * pi / 180.0,
+            angle: value * math.pi / 180.0,
             child: child,
           ),
           tween: Tween<double>(begin: 0, end: 360),
@@ -201,7 +215,7 @@ class FlipAnimation extends GetAnimatedBuilder<double> {
     super.idleValue = 0,
   }) : super(
           builder: (context, value, child) {
-            final radians = value * pi;
+            final radians = value * math.pi;
             return Transform(
               transform: Matrix4.rotationY(radians),
               alignment: Alignment.center,
@@ -226,7 +240,7 @@ class WaveAnimation extends GetAnimatedBuilder<double> {
           builder: (context, value, child) => Transform(
             transform: Matrix4.translationValues(
               0.0,
-              20.0 * sin(value * pi * 2),
+              20.0 * math.sin(value * math.pi * 2),
               0.0,
             ),
             child: child,
@@ -249,7 +263,7 @@ class WobbleAnimation extends GetAnimatedBuilder<double> {
           builder: (context, value, child) => Transform(
             transform: Matrix4.identity()
               ..setEntry(3, 2, 0.001)
-              ..rotateZ(sin(value * pi * 2) * 0.1),
+              ..rotateZ(math.sin(value * math.pi * 2) * 0.1),
             alignment: Alignment.center,
             child: child,
           ),
