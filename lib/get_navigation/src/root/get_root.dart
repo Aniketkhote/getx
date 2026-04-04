@@ -176,7 +176,8 @@ class ConfigData {
           defaultTransitionCurve ?? this.defaultTransitionCurve,
       defaultDialogTransitionCurve:
           defaultDialogTransitionCurve ?? this.defaultDialogTransitionCurve,
-      defaultDialogTransitionDuration: defaultDialogTransitionDuration ??
+      defaultDialogTransitionDuration:
+          defaultDialogTransitionDuration ??
           this.defaultDialogTransitionDuration,
       routing: routing ?? this.routing,
       parameters: parameters ?? this.parameters,
@@ -277,11 +278,7 @@ class ConfigData {
 }
 
 class GetRoot extends StatefulWidget {
-  const GetRoot({
-    super.key,
-    required this.config,
-    required this.child,
-  });
+  const GetRoot({super.key, required this.config, required this.child});
   final ConfigData config;
   final Widget child;
   @override
@@ -359,12 +356,13 @@ class GetRootState extends State<GetRoot> with WidgetsBindingObserver {
 
   void onInit() {
     if (config.getPages == null && config.home == null) {
-      throw 'You need add pages or home';
+      throw Exception('You need add pages or home');
     }
 
     if (config.routerDelegate == null) {
       final newDelegate = GetDelegate.createDelegate(
-        pages: config.getPages ??
+        pages:
+            config.getPages ??
             [
               GetPage(
                 name: cleanRouteName("/${config.home.runtimeType}"),
@@ -375,11 +373,11 @@ class GetRootState extends State<GetRoot> with WidgetsBindingObserver {
         navigatorKey: config.navigatorKey,
         navigatorObservers: (config.navigatorObservers == null
             ? <NavigatorObserver>[
-                GetObserver(config.routingCallback, Get.routing)
+                GetObserver(config.routingCallback, Get.routing),
               ]
             : <NavigatorObserver>[
                 GetObserver(config.routingCallback, config.routing),
-                ...config.navigatorObservers!
+                ...config.navigatorObservers!,
               ]),
       );
       config = config.copyWith(routerDelegate: newDelegate);
@@ -388,13 +386,15 @@ class GetRootState extends State<GetRoot> with WidgetsBindingObserver {
     if (config.routeInformationParser == null) {
       final newRouteInformationParser =
           GetInformationParser.createInformationParser(
-        initialRoute: config.initialRoute ??
-            config.getPages?.first.name ??
-            cleanRouteName("/${config.home.runtimeType}"),
-      );
+            initialRoute:
+                config.initialRoute ??
+                config.getPages?.first.name ??
+                cleanRouteName("/${config.home.runtimeType}"),
+          );
 
-      config =
-          config.copyWith(routeInformationParser: newRouteInformationParser);
+      config = config.copyWith(
+        routeInformationParser: newRouteInformationParser,
+      );
     }
 
     if (config.locale != null) Get.locale = config.locale;

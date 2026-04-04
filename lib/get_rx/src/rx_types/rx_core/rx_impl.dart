@@ -72,8 +72,12 @@ mixin RxObjectMixin<T> on GetListenable<T> {
   /// added benefit that it primes the stream with the current [value], rather
   /// than waiting for the next [value]. This should not be called in [onInit]
   /// or anywhere else during the build process.
-  StreamSubscription<T> listenAndPump(void Function(T event) onData,
-      {Function? onError, void Function()? onDone, bool? cancelOnError}) {
+  StreamSubscription<T> listenAndPump(
+    void Function(T event) onData, {
+    Function? onError,
+    void Function()? onDone,
+    bool? cancelOnError,
+  }) {
     final subscription = listen(
       onData,
       onError: onError,
@@ -251,7 +255,7 @@ class Rx<T> extends _RxImpl<T> {
     try {
       return (value as dynamic)?.toJson();
     } on Exception catch (_) {
-      throw '$T has not method [toJson]';
+      throw Exception('$T has not method [toJson]');
     }
   }
 }
@@ -264,7 +268,7 @@ class Rxn<T> extends Rx<T?> {
     try {
       return (value as dynamic)?.toJson();
     } on Exception catch (_) {
-      throw '$T has not method [toJson]';
+      throw Exception('$T has not method [toJson]');
     }
   }
 }

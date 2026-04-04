@@ -1173,7 +1173,7 @@ extension GetNavigationExt on GetInterface {
       key = Get.rootController.rootDelegate;
     } else {
       if (!keys.containsKey(k)) {
-        throw 'Route id ($k) not found';
+        throw Exception('Route id ($k) not found');
       }
       key = keys[k]!;
     }
