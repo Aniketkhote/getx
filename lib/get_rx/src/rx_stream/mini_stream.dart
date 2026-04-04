@@ -102,23 +102,20 @@ class FastList<T> {
     }
   }
 
-  bool get isEmpty => _length == 0;
+  bool get isEmpty => _head == null;
 
-  bool get isNotEmpty => _length > 0;
+  bool get isNotEmpty => _head != null;
 
   int get length => _length;
 
   MiniSubscription<T>? elementAt(int position) {
-    if (isEmpty || position < 0 || position >= _length) return null;
+    if (position < 0 || position >= _length) return null;
 
     var node = _head;
-    var current = 0;
-
-    while (current != position) {
-      node = node!.next;
-      current++;
+    for (var i = 0; i < position && node != null; i++) {
+      node = node.next;
     }
-    return node!.data;
+    return node?.data;
   }
 
   void addListener(MiniSubscription<T> data) {
@@ -148,7 +145,7 @@ class FastList<T> {
     while (currentNode != null) {
       if (currentNode.data == element) {
         _removeNode(currentNode);
-        break;
+        return;
       }
       currentNode = currentNode.next;
     }
