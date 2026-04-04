@@ -50,14 +50,14 @@ mixin GetSingleTickerProviderStateMixin on GetxController
     _ticker =
         Ticker(onTick, debugLabel: kDebugMode ? 'created by $this' : null);
     // We assume that this is called from initState, build, or some sort of
-    // event handler, and that thus TickerMode.of(context) would return true. We
+    // event handler, and that thus TickerMode.valuesOf(context).enabled would return true. We
     // can't actually check that here because if we're in initState then we're
     // not allowed to do inheritance checks yet.
     return _ticker!;
   }
 
   void didChangeDependencies(BuildContext context) {
-    if (_ticker != null) _ticker!.muted = !TickerMode.of(context);
+    if (_ticker != null) _ticker!.muted = !TickerMode.valuesOf(context).enabled;
   }
 
   @override
@@ -127,7 +127,7 @@ mixin GetTickerProviderStateMixin on GetxController implements TickerProvider {
   }
 
   void didChangeDependencies(BuildContext context) {
-    final muted = !TickerMode.of(context);
+    final muted = !TickerMode.valuesOf(context).enabled;
     if (_tickers != null) {
       for (final ticker in _tickers!) {
         ticker.muted = muted;
