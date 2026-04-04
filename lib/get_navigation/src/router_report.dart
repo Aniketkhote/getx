@@ -1,17 +1,15 @@
-import 'dart:collection';
-
 import '../../get.dart';
 
 class RouterReportManager<T> {
   /// Holds a reference to `Get.reference` when the Instance was
   /// created to manage the memory.
-  final Map<T?, List<String>> _routesKey = {};
+  final Map<T?, List<String>> _routesKey = <T?, List<String>>{};
 
   /// Stores the onClose() references of instances created with `Get.create()`
   /// using the `Get.reference`.
   /// Experimental feature to keep the lifecycle and memory management with
   /// non-singleton instances.
-  final Map<T?, HashSet<Function>> _routesByCreate = {};
+  final Map<T?, Set<Function>> _routesByCreate = <T?, Set<Function>>{};
 
   static RouterReportManager? _instance;
 
@@ -52,7 +50,7 @@ class RouterReportManager<T> {
   }
 
   void appendRouteByCreate(GetLifeCycleMixin i) {
-    _routesByCreate[_current] ??= HashSet<Function>();
+    _routesByCreate[_current] ??= <Function>{};
     // _routesByCreate[Get.reference]!.add(i.onDelete as Function);
     _routesByCreate[_current]!.add(i.onDelete);
   }
