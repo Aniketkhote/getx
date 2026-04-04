@@ -8,7 +8,7 @@ mixin RouteReportMixin<T extends StatefulWidget> on State<T> {
   @override
   void initState() {
     super.initState();
-    RouterReportManager.instance.reportCurrentRoute(this);
+    RouterReportManager.instance.currentRoute = this;
   }
 
   @override
@@ -22,7 +22,7 @@ mixin PageRouteReportMixin<T> on Route<T> {
   @override
   void install() {
     super.install();
-    RouterReportManager.instance.reportCurrentRoute(this);
+    RouterReportManager.instance.currentRoute = this;
   }
 
   @override

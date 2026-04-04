@@ -1,6 +1,5 @@
 import 'dart:async';
 
-import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 
 import '../../../get_instance/src/bindings_interface.dart';
@@ -267,17 +266,17 @@ class GetDelegate extends RouterDelegate<RouteDecoder>
   }
 
   Future<bool> canPopHistory() {
-    return SynchronousFuture(_canPopHistory());
+    return Future.value(_canPopHistory());
   }
 
   bool _canPopPage() {
     final currentTreeBranch = currentConfiguration?.currentTreeBranch;
     if (currentTreeBranch == null) return false;
-    return currentTreeBranch.length > 1 ? true : _canPopHistory();
+    return currentTreeBranch.length > 1 || _canPopHistory();
   }
 
   Future<bool> canPopPage() {
-    return SynchronousFuture(_canPopPage());
+    return Future.value(_canPopPage());
   }
 
   bool _canPop(PopMode mode) {
@@ -293,14 +292,18 @@ class GetDelegate extends RouterDelegate<RouteDecoder>
   ///
   /// visual pages must have [GetPage.participatesInRootNavigator] set to true
   Iterable<GetPage> getVisualPages(RouteDecoder? currentHistory) {
-    final res = currentHistory!.currentTreeBranch
-        .where((r) => r.participatesInRootNavigator != null);
-    if (res.isEmpty) {
+    if (currentHistory == null) return const [];
+
+    final treeBranch = currentHistory.currentTreeBranch;
+    final hasExplicitParticipants =
+        treeBranch.any((r) => r.participatesInRootNavigator != null);
+
+    if (!hasExplicitParticipants) {
       //default behavior, all routes participate in root navigator
       return _activePages.map((e) => e.route!);
     } else {
       //user specified at least one participatesInRootNavigator
-      return res
+      return treeBranch
           .where((element) => element.participatesInRootNavigator == true);
     }
   }

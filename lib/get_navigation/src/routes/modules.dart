@@ -70,7 +70,7 @@ abstract class Module extends StatefulWidget {
 class ModuleState extends State<Module> {
   @override
   void initState() {
-    RouterReportManager.instance.reportCurrentRoute(this);
+    RouterReportManager.instance.currentRoute = this;
     widget.dependencies(Dependencies());
     super.initState();
   }

@@ -1,4 +1,3 @@
-import 'package:flutter/foundation.dart';
 import 'package:flutter/widgets.dart';
 
 import '../../../get.dart';
@@ -17,7 +16,7 @@ class GetInformationParser extends RouteInformationParser<RouteDecoder> {
     Get.log('GetInformationParser is created !');
   }
   @override
-  SynchronousFuture<RouteDecoder> parseRouteInformation(
+  Future<RouteDecoder> parseRouteInformation(
     RouteInformation routeInformation,
   ) {
     final uri = routeInformation.uri;
@@ -36,7 +35,7 @@ class GetInformationParser extends RouteInformationParser<RouteDecoder> {
 
     Get.log('GetInformationParser: route location: $location');
 
-    return SynchronousFuture(RouteDecoder.fromRoute(location));
+    return Future.value(RouteDecoder.fromRoute(location));
   }
 
   @override

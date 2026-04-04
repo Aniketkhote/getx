@@ -47,7 +47,7 @@ class GetObserver extends NavigatorObserver {
       Get.log("CLOSE TO ROUTE ${currentRoute.name}");
     }
     if (previousRoute != null) {
-      RouterReportManager.instance.reportCurrentRoute(previousRoute);
+      RouterReportManager.instance.currentRoute = previousRoute;
     }
 
     // Here we use a 'inverse didPush set', meaning that we use
@@ -84,7 +84,7 @@ class GetObserver extends NavigatorObserver {
       Get.log("GOING TO ROUTE ${newRoute.name}");
     }
 
-    RouterReportManager.instance.reportCurrentRoute(route);
+    RouterReportManager.instance.currentRoute = route;
     _routeSend?.update((value) {
       if (route is PageRoute) {
         value.current = newRoute.name ?? '';
@@ -145,7 +145,7 @@ class GetObserver extends NavigatorObserver {
     Get.log("NEW ROUTE $newName");
 
     if (newRoute != null) {
-      RouterReportManager.instance.reportCurrentRoute(newRoute);
+      RouterReportManager.instance.currentRoute = newRoute;
     }
 
     _routeSend?.update((value) {

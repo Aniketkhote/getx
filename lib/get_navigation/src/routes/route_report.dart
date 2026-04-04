@@ -14,7 +14,7 @@ class RouteReport extends StatefulWidget {
 class RouteReportState extends State<RouteReport> with RouteReportMixin {
   @override
   void initState() {
-    RouterReportManager.instance.reportCurrentRoute(this);
+    RouterReportManager.instance.currentRoute = this;
     super.initState();
   }
 

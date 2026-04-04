@@ -17,7 +17,7 @@ class GetDialogRoute<T> extends PopupRoute<T> {
         _barrierColor = barrierColor,
         _transitionDuration = transitionDuration,
         _transitionBuilder = transitionBuilder {
-    RouterReportManager.instance.reportCurrentRoute(this);
+    RouterReportManager.instance.currentRoute = this;
   }
 
   final RoutePageBuilder widget;

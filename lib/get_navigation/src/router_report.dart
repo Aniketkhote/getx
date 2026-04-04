@@ -9,7 +9,7 @@ class RouterReportManager<T> {
   /// using the `Get.reference`.
   /// Experimental feature to keep the lifecycle and memory management with
   /// non-singleton instances.
-  final Map<T?, Set<Function>> _routesByCreate = <T?, Set<Function>>{};
+  final Map<T?, Set<VoidCallback>> _routesByCreate = <T?, Set<VoidCallback>>{};
 
   static RouterReportManager? _instance;
 
@@ -28,8 +28,7 @@ class RouterReportManager<T> {
 
   T? _current;
 
-  // ignore: use_setters_to_change_properties
-  void reportCurrentRoute(T newRoute) {
+  set currentRoute(T newRoute) {
     _current = newRoute;
   }
 
@@ -50,7 +49,7 @@ class RouterReportManager<T> {
   }
 
   void appendRouteByCreate(GetLifeCycleMixin i) {
-    _routesByCreate[_current] ??= <Function>{};
+    _routesByCreate[_current] ??= <VoidCallback>{};
     // _routesByCreate[Get.reference]!.add(i.onDelete as Function);
     _routesByCreate[_current]!.add(i.onDelete);
   }
@@ -65,9 +64,7 @@ class RouterReportManager<T> {
   }
 
   void reportRouteWillDispose(T disposed) {
-    final keysToRemove = <String>[];
-
-    _routesKey[disposed]?.forEach(keysToRemove.add);
+    final keysToRemove = [...?_routesKey[disposed]];
 
     /// Removes `Get.create()` instances registered in `routeName`.
     if (_routesByCreate.containsKey(disposed)) {
@@ -85,8 +82,6 @@ class RouterReportManager<T> {
 
       //_routesKey.remove(element);
     }
-
-    keysToRemove.clear();
   }
 
   /// Clears from memory registered Instances associated with [routeName] when
@@ -94,9 +89,7 @@ class RouterReportManager<T> {
   /// [SmartManagement.keepFactory]
   /// Meant for internal usage of `GetPageRoute` and `GetDialogRoute`
   void _removeDependencyByRoute(T routeName) {
-    final keysToRemove = <String>[];
-
-    _routesKey[routeName]?.forEach(keysToRemove.add);
+    final keysToRemove = [...?_routesKey[routeName]];
 
     /// Removes `Get.create()` instances registered in `routeName`.
     if (_routesByCreate.containsKey(routeName)) {
@@ -117,7 +110,5 @@ class RouterReportManager<T> {
     }
 
     _routesKey.remove(routeName);
-
-    keysToRemove.clear();
   }
 }
