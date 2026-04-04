@@ -36,8 +36,6 @@ extension ResetInstance on GetInterface {
   /// `clearRouteBindings` clears Instances associated with routes.
   ///
   bool resetInstance({bool clearRouteBindings = true}) {
-    //  if (clearFactory) _factory.clear();
-    // deleteAll(force: true);
     if (clearRouteBindings) RouterReportManager.instance.clearRouteKeys();
     Inst._singl.clear();
 
@@ -51,24 +49,6 @@ extension Inst on GetInterface {
   /// Holds references to every registered Instance when using
   /// `Get.put()`
   static final Map<String, _InstanceBuilderFactory> _singl = {};
-
-  /// Holds a reference to every registered callback when using
-  /// `Get.lazyPut()`
-  // static final Map<String, _Lazy> _factory = {};
-
-  // void injector<S>(
-  //   InjectorBuilderCallback<S> fn, {
-  //   String? tag,
-  //   bool fenix = false,
-  //   //  bool permanent = false,
-  // }) {
-  //   lazyPut(
-  //     () => fn(this),
-  //     tag: tag,
-  //     fenix: fenix,
-  //     // permanent: permanent,
-  //   );
-  // }
 
   S put<S>(
     S dependency, {
@@ -224,21 +204,18 @@ extension Inst on GetInterface {
   _InstanceBuilderFactory? _getDependency<S>({String? tag, String? key}) {
     final newKey = key ?? _getKey(S, tag);
 
-    if (!_singl.containsKey(newKey)) {
+    final dep = _singl[newKey];
+    if (dep == null) {
       Get.log('Instance "$newKey" is not registered.', isError: true);
-      return null;
-    } else {
-      return _singl[newKey];
     }
+    return dep;
   }
 
   void markAsDirty<S>({String? tag, String? key}) {
     final newKey = key ?? _getKey(S, tag);
-    if (_singl.containsKey(newKey)) {
-      final dep = _singl[newKey];
-      if (dep != null && !dep.permanent) {
-        dep.isDirty = true;
-      }
+    final dep = _singl[newKey];
+    if (dep != null && !dep.permanent) {
+      dep.isDirty = true;
     }
   }
 
@@ -262,12 +239,8 @@ extension Inst on GetInterface {
 
   S putOrFind<S>(InstanceBuilderCallback<S> dep, {String? tag}) {
     final key = _getKey(S, tag);
-
-    if (_singl.containsKey(key)) {
-      return _singl[key]!.getDependency() as S;
-    } else {
-      return put(dep(), tag: tag);
-    }
+    final existing = _singl[key];
+    return existing?.getDependency() as S? ?? put(dep(), tag: tag);
   }
 
   /// Finds the registered type <[S]> (or [tag])
@@ -341,12 +314,6 @@ extension Inst on GetInterface {
   /// Delete registered Class Instance [S] (or [tag]) and, closes any open
   /// controllers `DisposableInterface`, cleans up the memory
   ///
-  /// /// Deletes the Instance<[S]>, cleaning the memory.
-  //  ///
-  //  /// - [tag] Optional "tag" used to register the Instance
-  //  /// - [key] For internal usage, is the processed key used to register
-  //  ///   the Instance. **don't use** it unless you know what you are doing.
-
   /// Deletes the Instance<[S]>, cleaning the memory and closes any open
   /// controllers (`DisposableInterface`).
   ///
@@ -403,11 +370,7 @@ extension Inst on GetInterface {
         return false;
       } else {
         _singl.remove(newKey);
-        if (_singl.containsKey(newKey)) {
-          Get.log('Error removing object "$newKey"', isError: true);
-        } else {
-          Get.log('"$newKey" deleted from memory');
-        }
+        Get.log('"$newKey" deleted from memory');
         return true;
       }
     }
@@ -425,7 +388,9 @@ extension Inst on GetInterface {
   }
 
   void reloadAll({bool force = false}) {
-    _singl.forEach((key, value) {
+    for (final entry in _singl.entries) {
+      final key = entry.key;
+      final value = entry.value;
       if (value.permanent && !force) {
         Get.log('Instance "$key" is permanent. Skipping reload');
       } else {
@@ -433,7 +398,7 @@ extension Inst on GetInterface {
         value.isInit = false;
         Get.log('Instance "$key" was reloaded.');
       }
-    });
+    }
   }
 
   void reload<S>({

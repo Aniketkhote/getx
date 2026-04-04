@@ -42,11 +42,9 @@ mixin GetLifeCycleMixin {
   /// It uses an internal "callable" type, to avoid any @overrides in subclasses.
   /// This method should be internal and is required to define the
   /// lifetime cycle of the subclass.
-  // @protected
   @mustCallSuper
   @nonVirtual
   void onStart() {
-    // _checkIfAlreadyConfigured();
     if (_initialized) return;
     onInit();
     _initialized = true;
@@ -65,14 +63,6 @@ mixin GetLifeCycleMixin {
     _isClosed = true;
     onClose();
   }
-
-//   void _checkIfAlreadyConfigured() {
-//     if (_initialized) {
-//       throw """You can only call configureLifeCycle once.
-// The proper place to insert it is in your class's constructor
-// that inherits GetLifeCycle.""";
-//     }
-//   }
 }
 
 /// Allow track difference between GetxServices and GetxControllers
