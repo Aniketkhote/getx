@@ -48,7 +48,6 @@ class RxList<E> extends GetListenable<List<E>>
   @override
   RxList<E> operator +(Iterable<E> val) {
     addAll(val);
-    // refresh();
     return this;
   }
 
