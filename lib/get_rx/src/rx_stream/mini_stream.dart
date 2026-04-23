@@ -28,9 +28,16 @@ class MiniSubscription<T> {
 class MiniStream<T> {
   FastList<T> listenable = FastList<T>();
 
-  late T _value;
+  T? _value;
 
-  T get value => _value;
+  T get value {
+    if (_value == null) {
+      throw StateError(
+        'No value has been set. Call add() before accessing value.',
+      );
+    }
+    return _value!;
+  }
 
   set value(T val) {
     add(val);
