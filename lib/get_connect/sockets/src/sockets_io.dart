@@ -37,23 +37,30 @@ class BaseWebSocket {
           : await WebSocket.connect(url);
 
       socket!.pingInterval = ping;
-      socketNotifier?.open();
+      socketNotifier?.open?.call();
       connectionStatus = ConnectionStatus.connected;
 
-      socket!.listen((data) {
-        socketNotifier!.notifyData(data);
-      }, onError: (err) {
-        socketNotifier!.notifyError(Close(err.toString(), 1005));
-      }, onDone: () {
-        connectionStatus = ConnectionStatus.closed;
-        socketNotifier!
-            .notifyClose(Close('Connection Closed', socket!.closeCode));
-      }, cancelOnError: true);
+      socket!.listen(
+        (data) {
+          socketNotifier!.notifyData(data);
+        },
+        onError: (err) {
+          socketNotifier!.notifyError(Close(err.toString(), 1005));
+        },
+        onDone: () {
+          connectionStatus = ConnectionStatus.closed;
+          socketNotifier!.notifyClose(
+            Close('Connection Closed', socket!.closeCode),
+          );
+        },
+        cancelOnError: true,
+      );
       return;
     } on SocketException catch (e) {
       connectionStatus = ConnectionStatus.closed;
-      socketNotifier!
-          .notifyError(Close(e.osError!.message, e.osError!.errorCode));
+      socketNotifier!.notifyError(
+        Close(e.osError!.message, e.osError!.errorCode),
+      );
       return;
     }
   }
@@ -86,7 +93,7 @@ class BaseWebSocket {
 
   // ignore: use_setters_to_change_properties
   void onOpen(OpenSocket fn) {
-    socketNotifier!.open = fn;
+    socketNotifier?.open = fn;
   }
 
   void send(dynamic data) async {
@@ -106,7 +113,8 @@ class BaseWebSocket {
       var client = HttpClient(context: SecurityContext());
       client.badCertificateCallback = (cert, host, port) {
         Get.log(
-            'BaseWebSocket: Allow self-signed certificate => $host:$port. ');
+          'BaseWebSocket: Allow self-signed certificate => $host:$port. ',
+        );
         return true;
       };
 
@@ -120,10 +128,7 @@ class BaseWebSocket {
       var response = await request.close();
       // ignore: close_sinks
       var socket = await response.detachSocket();
-      var webSocket = WebSocket.fromUpgradedSocket(
-        socket,
-        serverSide: false,
-      );
+      var webSocket = WebSocket.fromUpgradedSocket(socket, serverSide: false);
 
       return webSocket;
     } on Exception catch (_) {
@@ -132,8 +137,4 @@ class BaseWebSocket {
   }
 }
 
-enum ConnectionStatus {
-  connecting,
-  connected,
-  closed,
-}
+enum ConnectionStatus { connecting, connected, closed }

@@ -30,7 +30,7 @@ class SocketNotifier {
   List<void Function(Close)>? _onCloses = <CloseSocket>[];
   List<void Function(Close)>? _onErrors = <CloseSocket>[];
 
-  late OpenSocket open;
+  OpenSocket? open;
 
   /// subscribe to close events
   void addCloses(CloseSocket socket) {

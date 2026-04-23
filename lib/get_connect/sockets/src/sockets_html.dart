@@ -45,7 +45,7 @@ class BaseWebSocket {
       connectionStatus = ConnectionStatus.connecting;
       socket = html.WebSocket(url);
       socket!.onOpen.listen((e) {
-        socketNotifier?.open();
+        socketNotifier?.open?.call();
         _t = Timer?.periodic(ping, (t) {
           socket!.send(''.toJSBox);
         });
@@ -103,7 +103,7 @@ class BaseWebSocket {
 
   // ignore: use_setters_to_change_properties
   void onOpen(OpenSocket fn) {
-    socketNotifier!.open = fn;
+    socketNotifier?.open = fn;
   }
 
   void send(Object data) {
@@ -118,8 +118,4 @@ class BaseWebSocket {
   }
 }
 
-enum ConnectionStatus {
-  connecting,
-  connected,
-  closed,
-}
+enum ConnectionStatus { connecting, connected, closed }

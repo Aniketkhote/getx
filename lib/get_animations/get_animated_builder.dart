@@ -71,12 +71,12 @@ class GetAnimatedBuilderState<T> extends State<GetAnimatedBuilder<T>>
     super.initState();
 
     if (widget is OpacityAnimation) {
-      final current =
-          context.findRootAncestorStateOfType<GetAnimatedBuilderState>();
+      final current = context
+          .findRootAncestorStateOfType<GetAnimatedBuilderState>();
       final isLast = current == null;
 
       if (widget is FadeInAnimation) {
-        _idleValue = 1.0 as dynamic;
+        _idleValue = 1.0 as T;
       } else {
         if (isLast) {
           _willResetOnDispose = false;
@@ -89,18 +89,12 @@ class GetAnimatedBuilderState<T> extends State<GetAnimatedBuilder<T>>
       _idleValue = widget.idleValue;
     }
 
-    _controller = AnimationController(
-      vsync: this,
-      duration: widget.duration,
-    );
+    _controller = AnimationController(vsync: this, duration: widget.duration);
 
     _controller.addStatusListener(_listener);
 
     _animation = widget.tween.animate(
-      CurvedAnimation(
-        parent: _controller,
-        curve: widget.curve,
-      ),
+      CurvedAnimation(parent: _controller, curve: widget.curve),
     );
 
     Future.delayed(widget.delay, () {
