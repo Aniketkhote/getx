@@ -3,7 +3,7 @@
 [![pub package](https://img.shields.io/pub/v/get.svg?label=get&color=blue)](https://pub.dev/packages/get)
 [![popularity](https://img.shields.io/pub/popularity/get?logo=dart)](https://pub.dev/packages/get/score)
 [![likes](https://img.shields.io/pub/likes/get?logo=dart)](https://pub.dev/packages/get/score)
-[![pub points](https://img.shields.io/pub/points/sentry?logo=dart)](https://pub.dev/packages/get/score)
+[![pub points](https://img.shields.io/pub/points/get?logo=dart)](https://pub.dev/packages/get/score)
 ![building](https://github.com/jonataslaw/get/workflows/build/badge.svg)
 [![style: effective dart](https://img.shields.io/badge/style-effective_dart-40c4ff.svg)](https://pub.dev/packages/effective_dart)
 [![Discord Shield](https://img.shields.io/discord/722900883784073290.svg?logo=discord)](https://discord.com/invite/9Hpt99N)
@@ -140,7 +140,7 @@ void main() => runApp(GetMaterialApp(home: Home()));
 ```
 
 - Note: this does not modify the MaterialApp of the Flutter, GetMaterialApp is not a modified MaterialApp, it is just a pre-configured Widget, which has the default MaterialApp as a child. You can configure this manually, but it is definitely not necessary. GetMaterialApp will create routes, inject them, inject translations, inject everything you need for route navigation. If you use Get only for state management or dependency management, it is not necessary to use GetMaterialApp. GetMaterialApp is necessary for routes, snackbars, internationalization, bottomSheets, dialogs, and high-level apis related to routes and absence of context.
-- Note²: This step is only necessary if you gonna use route management (`Get.to()`, `Get.back()` and so on). If you not gonna use it then it is not necessary to do step 1
+- Note 2: This step is only necessary if you gonna use route management (`Get.to()`, `Get.back()` and so on). If you not gonna use it then it is not necessary to do step 1
 
 - Step 2:
   Create your business logic class and place all variables, methods and controllers inside it.
@@ -455,16 +455,16 @@ You can simply extend GetConnect and use the GET/POST/PUT/DELETE/SOCKET methods 
 ```dart
 class UserProvider extends GetConnect {
   // Get request
-  Future<Response> getUser(int id) => get('http://youapi/users/$id');
+  Future<Response> getUser(int id) => get('http://yourapi/users/$id');
   // Post request
-  Future<Response> postUser(Map data) => post('http://youapi/users', body: data);
+  Future<Response> postUser(Map data) => post('http://yourapi/users', body: data);
   // Post request with File
   Future<Response<CasesModel>> postCases(List<int> image) {
     final form = FormData({
       'file': MultipartFile(image, filename: 'avatar.png'),
       'otherFile': MultipartFile(image, filename: 'cover.png'),
     });
-    return post('http://youapi/users/upload', form);
+    return post('http://yourapi/users/upload', form);
   }
 
   GetSocket userMessages() {
@@ -499,7 +499,7 @@ class HomeProvider extends GetConnect {
     httpClient.addResponseModifier<CasesModel>((request, response) {
       CasesModel model = response.body;
       if (model.countries.contains('Brazil')) {
-        model.countries.remove('Brazilll');
+        model.countries.remove('Brazil');
       }
     });
 
@@ -768,10 +768,10 @@ GetMaterialApp(
 );
 
 Get.config(
-  enableLog = true,
-  defaultPopGesture = true,
-  defaultTransition = Transitions.cupertino
-)
+  enableLog: true,
+  defaultPopGesture: true,
+  defaultTransition: Transition.cupertino
+);
 ```
 
 You can optionally redirect all the logging messages from `Get`.
@@ -1024,7 +1024,7 @@ You have two options to build it.
 - with methods `desktop`, `tablet`,`phone`, `watch`. the specific
   method will be built when the screen type matches the method
   when the screen is [ScreenType.Tablet] the `tablet` method
-  will be exuded and so on.
+  will be executed and so on.
   **Note:** If you use this method please set the property `alwaysUseBuilder` to `false`
 
 With `settings` property you can set the width limit for the screen types.
@@ -1064,7 +1064,7 @@ Future<void> main() async {
   runApp(SomeApp());
 }
 
-/// Is a smart move to make your Services intiialize before you run the Flutter app.
+/// Is a smart move to make your Services initialize before you run the Flutter app.
 /// as you can control the execution flow (maybe you need to load some Theme configuration,
 /// apiKey, language defined by the User... so load SettingService before running ApiService.
 /// so GetMaterialApp() doesnt have to rebuild, and takes the values directly.
@@ -1073,7 +1073,7 @@ void initServices() async {
   /// Here is where you put get_storage, hive, shared_pref initialization.
   /// or moor connection, or whatever that's async.
   await Get.putAsync(() => DbService().init());
-  await Get.putAsync(SettingsService()).init();
+  await Get.putAsync(() => SettingsService().init());
   print('All services started...');
 }
 
